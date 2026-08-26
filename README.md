@@ -1,98 +1,84 @@
-# Pepper Chat
+# Pepper Chat — Nescot College Edition
 
-The code interfaces [OpenAI ChatGPT](https://openai.com/) with the [Aldebaran](https://www.aldebaran.com/en) Pepper and Nao robots, allowing open verbal conversation with these robots on a wide range of subjects.
+A fork of [ilabsweden/pepperchat](https://github.com/ilabsweden/pepperchat), adapted for the
+Computing department at [Nescot College](https://www.nescot.ac.uk/), Epsom, to run our SoftBank
+Pepper robot as an interactive assistant for open days, taster sessions, and the department itself.
 
-## Video of the Result
+The original project connects a Pepper/Nao robot to OpenAI's ChatGPT for open-ended spoken
+conversation. This fork keeps that core idea but reworks the pieces we needed to run it day-to-day
+in our own setup:
+
+- **Groq instead of paid OpenAI** — chat and speech-to-text run through the [Groq API](https://groq.com/)
+  (an OpenAI-compatible client pointed at Groq's endpoint) rather than a paid OpenAI subscription.
+- **PS5 controller movement** — a control panel drives Pepper's movement over a PS5 controller
+  instead of only autonomous/scripted motion.
+- **A custom lesson engine** — `lessons/*.txt` define step-by-step guided lessons (e.g. our Tinkercad
+  lesson) that Pepper can walk a student through, separate from free-form chat.
+- **Live web search** — weather questions go to [wttr.in](https://wttr.in/) for our location; other
+  factual questions are answered via the DuckDuckGo instant-answer API.
+- **A tablet subtitle UI** — Pepper's chest tablet is pointed at a small local web page that shows
+  live subtitles of what Pepper is hearing/saying, useful in a noisy open department.
+- **Department knowledge** — `staff.txt`, `courses.txt`, and `events.txt` give Pepper answers about
+  who's who, what we teach, and what's on, specific to Nescot.
+
+This is a working department tool, tuned for our network and hardware — see `CLAUDE.md` in this
+repo for the full technical breakdown (architecture, ports, environment variables, and known rough
+edges) if you're picking up development on it.
+
+## Video of the original project
 
 ### April 2024 update
 [![Pepper Dialogue](img/Pepper-prompt-2024-04.png)](https://youtu.be/1T3SLaut6wI?si=lggZ70EGl287Ke1G)
 
-### Original rlease, June 2022
+### Original release, June 2022
 [![Pepper Dialogue](img/Pepper-prompt.png)](https://youtu.be/zip90jyv1i4)
 
-## Installation
+## Running it
 
-[PepperChat](https://github.com/ilabsweden/pepperchat) depends on the NaoQi software to interface with the Pepper and Nao robots, and the OpenAI API to interface with ChatGPT. Please refer to the detailed setup instructions below for your preferred operating system. 
+Our setup splits across four terminals, because NaoQi's Python 2 SDK, our dialogue logic, and the
+Windows-side audio/control scripts each need a different environment:
 
-### Setup for Windows
+1. **WSL, Python 2** (needs the `naoqi` SDK) — talks directly to the robot:
+   ```
+   python2 module_commandable.py --pip <pepper_ip>
+   ```
+2. **WSL, Python 3.8** — the dialogue engine:
+   ```
+   python3 dispatcher.py --prompt oaichat/openai.prompt
+   ```
+3. **Windows PowerShell, Python 3.13** — streams mic audio to WSL:
+   ```
+   py -3.13 mic_streamer.py
+   ```
+4. **Windows PowerShell, Python 3.13** — the PS5 movement control panel:
+   ```
+   py -3.13 pepper_control.py
+   ```
 
-NaoQi is old and runs on Python 2.7 while OpenAI requires Python 3. We therefore need both Python versions installed. Here's a step by step guide for setup on Windows 11.
+Start them in that order — module 1 needs to be up before module 2 connects. Pepper's IP is DHCP,
+so check its current IP (press the chest button) before starting terminal 1.
 
-1. Make sure Python 3.x is installed on the system. 
-1. Install [Python 2.7](https://www.python.org/downloads/release/python-2718/). Select the 32 bit msi installer.
-1. Add ```C:\Python27``` to the environment PATH.
-1. Open a terminal and verify that ```python``` refers to Python2.7 and ```python3``` refers to your Python 3.x distribution. 
-
-Now we need a few of dependencies:
-
-* Install all dependencies for Python 2: ```python2 -m pip install -r .\requirements.py2.txt```
-* Install all dependencies for Python 3: ```python3 -m pip install -r .\requirements.py3.txt```
-
-We will use VS Code to run things, you may also use another environment if you prefer. 
-
-Now we need the Python NaoQi API for communicating with the Pepper robot. 
-
-* Download and extract NaoQi Python SDK for [Nao](https://support.unitedrobotics.group/en/support/solutions/articles/80001018812-nao-6-downloads) or [Pepper](https://support.unitedrobotics.group/en/support/solutions/articles/80001024221-pepper-2-5-downloads) 
-* Add the pynaoqi folder (e.g. *pynaoqi-python2.7-2.5.7.1-win32-vs2013/lib*) to the PYTHONPATH environment variable in Windows. 
-* You may also want to install *Choreographe* for [Nao](https://support.unitedrobotics.group/en/support/solutions/articles/80001018812-nao-6-downloads) or [Pepper](https://support.unitedrobotics.group/en/support/solutions/articles/80001024221-pepper-2-5-downloads). It is however not strictly needed to run *Pepper Chat*.
-
-Finally, we are ready to check out the repository. 
-
-* Check out this repository and open the folder in VS Code
-* Open a terminal and run ```python init.py``` to set up a default environment. Have your OpenAI account key available so that this can be stored with your configuration. 
-
-### Setup for OSX and Linux
-
-NaoQi is old and runs on Python 2.7 while OpenAI requires Python 3. 
-
-1. Open a terminal and verify that ```python2``` refers to Python2.7 and ```python3``` refers to your Python 3.x distribution. If any of them are missing, please install through your preferred package manager.  
-
-Now we need a few of dependencies:
-
-* Install all dependencies for Python 2: ```python2 -m pip install -r .\requirements.py2.txt```
-* Install all dependencies for Python 3: ```python3 -m pip install -r .\requirements.py3.txt```
-
-We are now ready to check out the repository:
-
-* Check out this repository and open the folder in VS Code
-* Open a terminal and run ```python init.py``` to set up a default environment. Have your OpenAI account key available so that this can be stored with your configuration. 
-
-We will use [VS Code](https://code.visualstudio.com/) to run things, you may also use another environment if you prefer. 
-
-Now we need the Python NaoQi API for communicating with the Pepper robot. 
-
-* Download and extract NaoQi Python SDK for [Nao](https://support.unitedrobotics.group/en/support/solutions/articles/80001018812-nao-6-downloads) or [Pepper](https://support.unitedrobotics.group/en/support/solutions/articles/80001024221-pepper-2-5-downloads) matching the version of your robot's software. Tested with NAOqi 2.5.10.7.
-* Update your terminal profile (e.g. *.zshrc*) with the following:
-    * export PYTHONPATH=${PYTHONPATH}:/path/to/python-sdk/lib/python2.7/site-packages
-    * export DYLD_LIBRARY_PATH=${DYLD_LIBRARY_PATH}:/path/to/python-sdk/lib
-    * export QI_SDK_PREFIX=/path/to/python-sdk
-* Start ```python2``` and make sure you can import ```naoqi```. OSX may throw a lot of warnings the first time NaoQi is imported. Google for the exact way to approve these. 
-
-I haven't been able to make Choreographe to run on recent versions of OSX, but it's not needed for running this app. 
-
-## Run
-Make sure you've gone through all steps in the Setup guide above before you start. 
-
-Note that the Speech recognition module uses a NaoQi (*Autonomous Life Proxy*) to switch focus to *nao_focus*. You may not have this script on your own robot and the the code will throw an exception as a result. This call is made solely to prevent the default dialogue system of the robot to interfere with PepperChat. You may safely comment this away or upload your own preferred focus script to the robot, e.g. using Choreograph. 
-
-* Start the Pepper python2 interface by opening a new terminal and execute ```python2 module_commandable.py --pip pepper.local``` (where _pepper.local_ refers to your robot's ip).
-* Next, start the OpenAI ChatGPT chatbot service by opening a terminal and execute ```python3 dispatcher.py```. This will initiate the dialogue on the robot.
-
+Configuration lives in `.env` (API keys, tablet wifi credentials — never commit this file) and
+`dialogue.env` (the persona/prompt text Pepper uses). See `CLAUDE.md` for the full list of
+environment variables and network ports this depends on.
 
 ## License
 
 This project is released under the MIT license. Please refer to [LICENSE.md](LICENSE.md) for license details.
 
-Parts of the source code have specific license formulations. Please see the file headers for details. 
+Parts of the source code have specific license formulations. Please see the file headers for details.
 
 ## Publications
 
-Erik Billing, Julia Rosén, and Maurice Lamb. 2023. [Language Models for Human-Robot Interaction](doc/Billing_etal_2023-Language_models_for_HRI.pdf). In Companion of the 2023 ACM/IEEE International Conference on Human-Robot Interaction (HRI ’23 Companion), March 13–16, 2023, Stockholm, Sweden. ACM, New York, NY, USA, 2 pages. https://doi.org/10.1145/3568294.3580040.
+Erik Billing, Julia Rosén, and Maurice Lamb. 2023. [Language Models for Human-Robot Interaction](doc/Billing_etal_2023-Language_models_for_HRI.pdf). In Companion of the 2023 ACM/IEEE International Conference on Human-Robot Interaction (HRI '23 Companion), March 13–16, 2023, Stockholm, Sweden. ACM, New York, NY, USA, 2 pages. https://doi.org/10.1145/3568294.3580040.
 
 ## Acknowledgments
 
-* Mikael Lebram @ University of Skövde, Sweden - for implementing the OpenAI ChatGPT based speech recognition system. 
-* Erik Billing @ University of Skövde, Sweden - for implementing the OpenAI GPT-3 dialogue system. 
-* Igor Lirussi @ Cognitive Learning and Robotics Laboratory at Boğaziçi University, Istanbul - for providing an [AIML-based dialogue system](https://github.com/igor-lirussi/Dialogue-Pepper-Robot) on which this project is built. 
+This fork is maintained by the Computing department at Nescot College, Epsom, building on the
+original PepperChat project:
+
+* Mikael Lebram @ University of Skövde, Sweden - for implementing the OpenAI ChatGPT based speech recognition system.
+* Erik Billing @ University of Skövde, Sweden - for implementing the OpenAI GPT-3 dialogue system.
+* Igor Lirussi @ Cognitive Learning and Robotics Laboratory at Boğaziçi University, Istanbul - for providing an [AIML-based dialogue system](https://github.com/igor-lirussi/Dialogue-Pepper-Robot) on which this project is built.
 * Johannes Bramauer @ Vienna University of Technology - for the [PepperSpeechRecognition](https://github.com/JBramauer/pepperspeechrecognition)
 * Anthony Zang (Uberi) and his [SpeechRecognition](https://github.com/Uberi/speech_recognition)
