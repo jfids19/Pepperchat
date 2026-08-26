@@ -22,14 +22,16 @@ dotenv.load_dotenv()
 if sys.version_info[0] < 3:
     raise ImportError('OpenAI Chat requires Python 3')
 
-import openai
 from openai import OpenAI
 
 class OaiChat:
   def __init__(self,user,prompt=None):
     self.log = None
     self.reset(user,prompt)
-    self.client = OpenAI(api_key = os.getenv('OPENAI_KEY'))
+    self.client = OpenAI(
+      base_url="https://api.groq.com/openai/v1",
+      api_key=os.getenv('GROQ_API_KEY')
+    )
 
   def reset(self,user,prompt=None):
     self.user = user
@@ -37,54 +39,30 @@ class OaiChat:
     self.resetRequestLog()
 
   def resetRequestLog(self):
-    # if (self.log): self.log.close()
-    # logdir = os.getenv('LOGDIR')
-    # if not os.path.isdir(logdir): os.mkdir(logdir)
-    # log = 'requests.%s.%s.log'%(self.user,datetime.now().strftime("%Y-%m-%d_%H%M%S"))
-    # self.log = open(os.path.join(logdir,log),'a')
-    # print('Logging requests to',log)
     pass
 
   def respond(self, inputText):
     start = datetime.now()
     self.moderation = None
-    #moderator = Thread(target=self.getModeration,args=(inputText,))
-    #moderator.start()
     self.history.append({'role':'user','content':inputText})
-    #print(self.history)
 
-    # Micke 251103: Detta funkar inte i G213. 
-    # Gnäll om att max_completion_tokens önskas istf max_tokens. Funkar inte heller...
-    # Vi fångar exception och fallbackar på äldre modell tills vidare
     response = None
     try:
       response = self.client.chat.completions.create(
-        #model="gpt-3.5-turbo-1106",
-        model="gpt-4o-mini", 
-        #response_format={ "type": "json_object" },
-        #user=self.user,
+        model="llama-3.3-70b-versatile",
         messages=self.history,
-        # temperature=0.7,
         max_tokens=150,
-        # top_p=1,
-        # frequency_penalty=1,
-        # presence_penalty=0
       )
     except Exception as ex:
       print("Failed response attempt, trying fallback")
     if not response:
       response = self.client.chat.completions.create(
-        model="gpt-3.5-turbo-1106",
+        model="llama-3.1-8b-instant",
         messages=self.history,
         max_tokens=150,
       )
-    
 
-    #moderator.join()
-    #print('Moderation:',self.moderation)
-    #print(response.choices[0].message.content)
     r = OaiResponse(response.model_dump_json())
-
     self.history.append({'role':'assistant','content':r.getText()})
     print('Request delay',datetime.now()-start)
     return r
@@ -100,10 +78,9 @@ class OaiChat:
       with codecs.open(promptPath,encoding='utf-8') as f:
         prompt.append({'role':'system','content':f.read()})
     return prompt
-    
+
 if __name__ == '__main__':
   chat = OaiChat()
-
   while True:
     try:
       s = input('> ')
@@ -113,5 +90,5 @@ if __name__ == '__main__':
       print(chat.history)
       print(chat.respond(s).getText())
     else:
-        break
+      break
   print('Closing GPT Server')

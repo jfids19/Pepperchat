@@ -9,12 +9,12 @@
 #    --pip <ip>: specify the ip of your robot (without specification it will use the ROBOT_IP defined below
 #
 # Author: Mikael Lebram & Erik Billing, University of Skovde based on code from Johannes Bramauer, Vienna University of Technology
-# Created: May 30, 2018 and updated spring progressively during in the period 2022-05 to 2024-04. 
+# Created: May 30, 2018 and updated spring progressively during in the period 2022-05 to 2024-04.
 # License: MIT
 ###########################################################
 
-ROBOT_PORT = 9559 # Robot
-ROBOT_IP = "pepper.local" # Pepper default
+ROBOT_PORT = 9559
+ROBOT_IP = "pepper.local"
 
 from optparse import OptionParser
 import threading
@@ -37,15 +37,16 @@ def encode(s):
     return codecs.encode(s,'utf-8','ignore')
 
 class ModuleCommandable(naoqi.ALModule):
-    def __init__(self, robot_ip, robot_port ):
-        naoqi.ALModule.__init__(self, mod_name )
+    def __init__(self, robot_ip, robot_port):
+        naoqi.ALModule.__init__(self, mod_name)
         self.memory = ALProxy("ALMemory", robot_ip, robot_port)
         self.posture = ALProxy("ALRobotPosture", robot_ip, robot_port)
         self.autonomous_life = ALProxy('ALAutonomousLife')
-        self.tts = ALProxy("ALTextToSpeech",  robot_ip, robot_port)
-        self.aup = ALProxy("ALAnimatedSpeech",  robot_ip, robot_port)
+        self.tts = ALProxy("ALTextToSpeech", robot_ip, robot_port)
+        self.aup = ALProxy("ALAnimatedSpeech", robot_ip, robot_port)
         self.tablet = ALProxy("ALTabletService", robot_ip, robot_port)
         self.audio = ALProxy("ALAudioDevice")
+        self.motion = ALProxy("ALMotion", robot_ip, robot_port)
 
         self.state_reporter = RobotStateReporter()
         self.command_receiver = pepper_command.CommandReceiver(self.on_command)
@@ -53,8 +54,10 @@ class ModuleCommandable(naoqi.ALModule):
         self.touched = False
         self.running = True
         self.pending_speech = ""
-        self.tablet_wifi_config = None # type: pepper_command.ConfigTabletWifi
-        self.speech_config = None # type: pepper_command.ConfigSpeech
+        self.tablet_wifi_config = None
+        self.speech_config = None
+        self._moving = False
+
         def speech_loop():
             while self.running:
                 try:
@@ -71,7 +74,7 @@ class ModuleCommandable(naoqi.ALModule):
                     traceback.print_exc()
                 time.sleep(.01)
         start_thread(speech_loop)
-    
+
     def connect_tablet_wifi(self):
         def wait_for_connection(timeout):
             t = time.time()
@@ -83,8 +86,8 @@ class ModuleCommandable(naoqi.ALModule):
             return True
         if self.tablet_wifi_config:
             self.tablet.configureWifi(
-                self.tablet_wifi_config.security_type.encode("utf-8"), 
-                self.tablet_wifi_config.ssid.encode("utf-8"), 
+                self.tablet_wifi_config.security_type.encode("utf-8"),
+                self.tablet_wifi_config.ssid.encode("utf-8"),
                 self.tablet_wifi_config.pwd.encode("utf-8")
             )
             if wait_for_connection(5):
@@ -93,10 +96,10 @@ class ModuleCommandable(naoqi.ALModule):
 
     def on_command(self, command):
         try:
-            # type: (pepper_command.Command) -> None
             if isinstance(command, pepper_command.Say):
                 self.stop_talking()
-                self.pending_speech=command.text
+                self.pending_speech = command.text
+
             elif isinstance(command, pepper_command.ConfigSpeech):
                 if not self.speech_config or self.speech_config.animated != command.animated:
                     if command.animated:
@@ -105,7 +108,7 @@ class ModuleCommandable(naoqi.ALModule):
                     else:
                         if self.autonomous_life.getState() != 'disabled':
                             self.autonomous_life.setState('disabled')
-                        self.posture.goToPosture('Stand',0.5)
+                        self.posture.goToPosture('Stand', 0.5)
                 if not self.speech_config or self.speech_config.language != command.language:
                     print(command.language, self.tts.getLanguage())
                     self.tts.setLanguage(command.language.encode("utf-8"))
@@ -114,14 +117,37 @@ class ModuleCommandable(naoqi.ALModule):
             elif isinstance(command, pepper_command.ConfigAudio):
                 self.audio.setOutputVolume(command.output_volume)
 
+            elif isinstance(command, pepper_command.Move):
+                def do_move(x=command.x, y=command.y, theta=command.theta):
+                    try:
+                        self.motion.setStiffnesses("Body", 1.0)
+                        if abs(x) < 0.01 and abs(y) < 0.01 and abs(theta) < 0.01:
+                            if self._moving:
+                                self._moving = False
+                                self.motion.stopMove()
+                                # Release head when stopped
+                                self.motion.setAngles("HeadYaw", 0.0, 0.1)
+                        else:
+                            # Continuously lock head every move command to override tracking
+                            self.motion.setAngles("HeadYaw", 0.0, 1.0)
+                            self.motion.setAngles("HeadPitch", 0.0, 1.0)
+                            if not self._moving:
+                                self._moving = True
+                            self.motion.moveToward(x, y, theta)
+                    except:
+                        traceback.print_exc()
+                start_thread(do_move)
+
             elif isinstance(command, pepper_command.ConfigTabletWifi):
                 self.tablet_wifi_config = command
+
             elif isinstance(command, pepper_command.OpenUrlOnTablet):
                 def connect_and_open():
                     if self.connect_tablet_wifi():
                         self.tablet.loadUrl(command.url.encode("utf-8"))
                         self.tablet.showWebview()
                 start_thread(connect_and_open)
+
         except:
             traceback.print_exc()
 
@@ -130,8 +156,13 @@ class ModuleCommandable(naoqi.ALModule):
         self.state_reporter.report_head_touched(touched)
         if touched:
             self.stop_talking()
+            self.pending_speech = ""
+            try:
+                self.tts.stopAll()
+                self.aup.stopAll()
+            except:
+                pass
 
-   
     def __del__(self):
         self.stop()
 
@@ -142,16 +173,13 @@ class ModuleCommandable(naoqi.ALModule):
 
     def version(self):
         return "1.0"
-    
+
     def stop_talking(self):
         self.pending_speech = ""
         self.tts.stopAll()
         self.state_reporter.report_talking(False)
 
 def main():
-    """ Main entry point
-
-    """
     parser = OptionParser()
     parser.add_option("--pip",
         help="Parent broker port. The IP address or your robot",
@@ -168,14 +196,11 @@ def main():
     pip   = opts.pip
     pport = opts.pport
 
-    # We need this broker to be able to construct
-    # NAOqi modules and subscribe to other modules
-    # The broker must stay alive until the program exists
     myBroker = naoqi.ALBroker("myBroker",
-       "0.0.0.0",   # listen to anyone
-       0,           # find a free port and use it
-       pip,         # parent broker IP
-       pport)       # parent broker port
+       "0.0.0.0",
+       0,
+       pip,
+       pport)
 
     global mod_name
     mod_name = "modcomm"

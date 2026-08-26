@@ -110,15 +110,29 @@ class CommandSender:
 
     def send(self, command):
         # type: (Command) -> None
-        if not self.socket:
-            self.socket = self.ctx.socket(zmq.REQ)
-            self.socket.connect("tcp://localhost:"+str(ZMQ_PORT))
-        self.socket.send_json(command.__dict__)
-        while True:
+        try:
+            if not self.socket:
+                self.socket = self.ctx.socket(zmq.REQ)
+                self.socket.connect("tcp://localhost:"+str(ZMQ_PORT))
+            self.socket.send_json(command.__dict__)
+            while True:
+                try:
+                    response = self.socket.recv_json(flags=zmq.NOBLOCK)
+                    print(response)
+                    return response
+                except zmq.Again:
+                    time.sleep(.1)
+        except zmq.error.ZMQError:
+            # Reset socket on error so next command gets a fresh connection
             try:
-                response = self.socket.recv_json(flags=zmq.NOBLOCK)
-                print(response)
-                return response
-            except zmq.Again:
-                time.sleep(.1)
+                self.socket.close()
+            except:
+                pass
+            self.socket = None
 
+class Move(Command):
+    def __init__(self, x=0.0, y=0.0, theta=0.0):
+        self.command = "Move"
+        self.x = x
+        self.y = y
+        self.theta = theta

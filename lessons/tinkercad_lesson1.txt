@@ -1,0 +1,33 @@
+LESSON_TITLE: Test Lesson - Introduction to Tinkercad
+LESSON_TRIGGER: start test lesson
+
+STEP_1:
+Today we are going to learn about Tinkercad - a free browser-based 3D design tool made by Autodesk. Tinkercad lets you build 3D models by combining simple shapes, and no experience is needed. Millions of students, engineers and designers use it every day. By the end of this lesson you will be able to navigate the Tinkercad workspace, add and move 3D shapes, combine and cut shapes, and understand how your design will become a real object. Do you have any questions before we continue? Say "no more questions" when you are ready to move on.
+
+STEP_2:
+First, let us get set up. Open Google Classroom and find the Tinkercad link shared by your teacher. Click the link and it will take you to the class join page. Create a free Tinkercad account using your school email address. Once you are in, navigate to the Activities section and open Basic Model Making. Then click Create New Design. Allow about 5 minutes to set up. Say "no more questions" when everyone is ready to continue.
+
+STEP_3:
+Now let me explain the Tinkercad interface. The Workplane is your 3D design canvas in the middle of the screen where you drag shapes. The Shapes Panel is on the right side and contains all your shapes. The View Cube in the top left lets you change your viewing angle. The Toolbar at the top lets you import, export, group and ungroup objects. And the Snap Grid at the bottom controls the precision of your movement. Do you have any questions about the interface? Say "no more questions" when you are ready.
+
+STEP_4:
+Now let us learn how to navigate. Your mouse is your controller. Use the scroll wheel to zoom in and out. Right click and drag to rotate your view and see your model from any angle. Middle click and drag to pan left, right, up and down. And click the home button to reset to the default view. Your task now is to spend 2 minutes just navigating around your empty workplane and getting comfortable. Say "no more questions" when you have finished exploring.
+
+STEP_5:
+Now we will add some shapes. Find the Shapes Panel on the right side of your screen and select Basic Shapes from the dropdown. Click and drag any shape from the panel onto the workplane - try a cube first. Then click on your shape to select it and you will see coloured handles appear around it. Your task is to add 3 different shapes to your workplane and explore what is available. Say "no more questions" when you have done that.
+
+STEP_6:
+Now let us learn to move and scale shapes. To move a shape side to side, left-click and drag it across the workplane. Hold Shift to constrain it to one axis. To move a shape up and down, drag the black arrow above the shape. To scale a shape, drag the black square handles to resize in one direction, or drag the white corner handles to scale in two directions at once. Hold Shift while scaling to keep the proportions correct. Do you have any questions about moving and scaling? Say "no more questions" when you are ready.
+
+STEP_7:
+Now let us learn to rotate. When you select a shape you will see three curved arrows. Drag the red curved arrow to rotate left and right. Drag the green curved arrow to rotate front and back. Drag the blue curved arrow to rotate up and down. Pro tip - you can also click on a shape and type an exact angle in the properties panel. Your task is to rotate a cube to 45 degrees and see if you can make it look like a diamond. Say "no more questions" when you have tried it.
+
+STEP_8:
+Now for one of Tinkercad's most powerful features - cutting shapes using holes. First add a solid shape to your workplane. Then add a second shape, and click the word Hole in the inspector panel - it will turn grey. Move the hole shape so it overlaps where you want the cut to be. Then select both shapes and press Control G to group them - the hole cuts right through. Key shortcuts to remember: Control G to group, Control Shift G to ungroup, Control D to duplicate, and Control Z to undo. Try cutting a hole in one of your shapes now. Say "no more questions" when you are done.
+
+STEP_9:
+You have now learned the core skills of Tinkercad. For your main task today you have 20 minutes to design your first 3D model. You can choose from a house, a rocket, a game controller, a keyring tag, a tree, or a trophy. Use everything you have learned - add shapes, move them, scale them, rotate them, and try using a hole object to cut out a window, door, or decorative pattern. Your designs save automatically so you do not need to download anything. Say "no more questions" if you have any questions before you start.
+
+STEP_10:
+Lesson 1 is now complete. Well done everyone! Your designs are saved automatically in Tinkercad so there is nothing to download. Your teacher will 3D print your models before the next session and you will get to hold a physical version of your own design. Before next time, think about what you would change or improve if you could do it again. See you next lesson!
+END_LESSON

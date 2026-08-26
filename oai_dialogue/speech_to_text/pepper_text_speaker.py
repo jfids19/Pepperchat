@@ -48,7 +48,9 @@ class PepperTextSpeaker:
             self.last_text_receive_time = time.time()
             self.unsentenced_text += text
             if sentences := subtitles.split_into_sentences(self.unsentenced_text):
-                self.unsentenced_text = self.unsentenced_text.removeprefix("".join(sentences))
+                prefix = "".join(sentences)
+                if self.unsentenced_text.startswith(prefix):
+                    self.unsentenced_text = self.unsentenced_text[len(prefix):]
                 self.sentences += sentences
 
     def __init__(self, command_sender:pepper_command.CommandSender, subtitle_server:subtitles.SubtitleServer=None):
@@ -71,5 +73,3 @@ class PepperTextSpeaker:
         self.worker.robot_talking = state.talking
         if state.head_touched:
             self.worker.done=True
-
-

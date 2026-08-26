@@ -15,3 +15,9 @@ dialogue.log
 *.log
 .env
 .DS_Store
+
+# IDE
+.idea/
+
+# nano crash-recovery artifacts
+*.save*

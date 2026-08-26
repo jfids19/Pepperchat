@@ -1,0 +1,153 @@
+NESCOT COMPUTING DEPARTMENT - COURSE INFORMATION
+
+
+=== COURSE 1: Pearson Level 3 AAQ BTEC National in Information Technology (Extended Certificate) ===
+
+
+What is it?
+This is an Alternative Academic Qualification equivalent in size to one A Level. It is designed for students who want to study Information Technology alongside A Levels, with the aim of progressing to higher education.
+
+
+Entry Requirements:
+The entry requirements for this course are 5 GCSE's at grade 4 or above ideally including English and maths at a grade 4
+
+
+Duration:
+2 years. First teaching from September 2026.
+
+
+Units studied (all mandatory):
+1. Information Technology Systems (externally examined) - covers IT systems, hardware and software relationships, network diagrams and the implications of using IT systems
+2. Cyber Security and Incident Management (externally examined) - covers types of cyber attacks, vulnerabilities in networked systems and how to plan and respond to incidents
+3. Website Development (internally assessed) - covers development tools, techniques and processes for building websites, and testing for usability and functionality
+4. Relational Database Development (internally assessed) - covers data structure, database design and database management systems
+
+
+How is it assessed?
+Two units are externally examined by Pearson (Units 1 and 2), sat in January or May/June each year. Two units are internally assessed through assignments set by Pearson and marked by your teachers. Grades are Pass, Merit, Distinction and Distinction*.
+
+
+Why choose this course?
+It gives you practical, hands-on IT skills alongside academic knowledge. You will learn to build websites, design databases, understand cybersecurity and how IT systems work in organisations. It is highly regarded by universities.
+
+
+Where can it lead?
+This qualification is accepted by over 150 UK universities. It can lead to degrees such as:
+- BA Business Studies
+- BSc Information Systems
+- BSc Computer Science
+It also combines well with A Levels in Business, Mathematics, Psychology and Art & Design.
+
+
+Skills you will develop:
+Critical thinking, problem solving, written communication, creativity and innovation, digital skills and cybersecurity awareness.
+
+
+---
+
+
+=== COURSE 2: Pearson BTEC Level 2 Extended Certificate in Information and Creative Technology ===
+
+
+What is it?
+A Level 2 vocational qualification equivalent in teaching time to one GCSE. It is designed for learners aged 14 to 19 who want to explore IT and creative technology in a practical, work-related context.
+
+
+Entry Requirements:
+The entry requirements for this course are 4 GCSE's at grade 3 with the ability to resit both English or maths whilst completing the course
+
+
+Duration:
+1 year (120 guided learning hours).
+
+
+Units studied:
+Mandatory units (all students complete these):
+- Unit 1: The Online World (externally assessed) - covers online services, communication technologies and the internet of things
+- Unit 2: Technology Systems
+- Unit 3: A Digital Portfolio (internally assessed) - students create a portfolio of digital work
+
+
+Specialist Units:
+- Unit 8: Mobile App Development
+- Unit 9: Spreadsheet Development
+- Unit 10: Database Development
+- Unit 11: Computer Networks
+- Unit 13: Website Development
+- Unit 19: Computing in the Workplace
+- Unit 20: Building a Computer
+
+
+How is it assessed?
+25% of the qualification is externally assessed by Pearson. The rest is assessed through assignments and a portfolio of work marked by your teachers. Grades are Level 2 Distinction*, Distinction, Merit, Pass, Level 1, and Unclassified.
+
+
+Why choose this course?
+It is a practical and engaging course that lets you explore different areas of IT and digital media including graphics, video, audio, animation and web. It is ideal if you are not sure which area of IT interests you most and want to try a range of digital skills.
+
+
+Where can it lead?
+This qualification provides clear progression to:
+- Level 3 BTEC courses in IT or related subjects (including the Level 3 course above)
+- Apprenticeships in digital and IT roles
+- Employment in entry-level IT and creative technology roles
+
+
+Skills you will develop:
+Teamworking, meeting deadlines, presenting information, digital content creation, problem solving and working from a brief.
+
+
+---
+
+
+=== COURSE 3: Pearson BTEC Level 1 Introductory in Business and Information Technology ===
+
+
+What is it?
+A Level 1 introductory qualification designed for learners who want to build foundational IT and transferable skills in preparation for further study. It focuses on what you can do practically rather than theory.
+
+
+Entry Requirements:
+No formal entry requirements. Suitable for any learner who wants to develop basic IT skills and gain a recognised qualification. Ideal for students who are not yet ready for Level 2.
+
+
+Duration:
+Available as an Award (70 guided learning hours), Certificate (180 guided learning hours) or Diploma (360 guided learning hours) depending on your study programme.
+
+
+Units studied:
+Group A - Core Skills units (mandatory, all learners complete these):
+- Developing a Personal Progression Plan - helps you plan your next steps in education or work
+
+
+Group B - Sector units (students choose from options including):
+- IT skills and using technology in the workplace
+- Communicating and working with others using IT
+- Using IT to solve problems
+- Creating digital content
+- Managing and storing information
+
+
+How is it assessed?
+All units are internally assessed through practical tasks, assignments and portfolios. There are no exams. Grades are Distinction, Merit and Pass.
+
+
+Why choose this course?
+It is a great starting point if you are new to IT or want to build confidence with technology. The course is very practical and supportive, and is designed to help you develop skills for everyday work and study. It is ideal alongside English and Maths studies.
+
+
+Where can it lead?
+This qualification prepares you to progress to:
+- Level 2 BTEC qualifications (such as the Level 2 course above)
+- Other Level 2 study programmes
+- Apprenticeships and entry-level work experience
+
+
+Skills you will develop:
+Communication, working with others, problem solving, managing information, self-management, and basic IT skills in a practical context.
+
+
+---
+
+
+For more information about any of these courses, speak to a member of the Nescot computing department team.

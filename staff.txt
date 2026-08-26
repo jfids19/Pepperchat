@@ -1,0 +1,7 @@
+NESCOT COMPUTING DEPARTMENT - STAFF
+
+Jack - Computing Tutor Demonstrator, looks after the Institute of Technology (IOT), the robots and pepper. Also teaches projects
+Jordan - Head of Computing
+
+If a student asks who to speak to about their course, direct them to their course tutor.
+If a student asks about the robotics lab or Pepper, they can speak to Nesco or Jordan.

@@ -51,7 +51,7 @@ class UdpReceiver(object):
         self.max_buf_size = max_buf_size
         self.multicast_req = None
         if is_multicast_ip(multicast_ip):
-            self.multicast_req = struct.pack("4s4s", socket.inet_aton(multicast_ip), socket.inet_aton(get_local_ip()))
+            self.multicast_req = struct.pack("4s4s", socket.inet_aton(multicast_ip), socket.inet_aton("0.0.0.0"))
         self._sock = None # type:socket.socket
         self._stop = threading.Event()
         self._thread = None # type:threading.Thread

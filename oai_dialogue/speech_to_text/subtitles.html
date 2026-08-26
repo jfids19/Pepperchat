@@ -1,123 +1,236 @@
 <!DOCTYPE html>
-<html>
-  <head>
+<html style="background:#1a0a2e;">
+<head>
     <meta charset="utf-8">
-    <title>Pepper JS Test</title>
+    <title>Pepper</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body{
-            padding: 0;
-            margin: 0;
-            /* font-size 0 to hide top text line */
-            font-size: 0px;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #1a0a2e;
+            font-family: Arial, sans-serif;
+            width: 100%;
+            overflow: hidden;
         }
-        #main{
-            height: 100vh;
-            width: 98vw;
-            padding: 0 1vw;
-            color: black;
-            background-color: white;
-            font-family: sans-serif;
-            font-size: 10vh;
-            overflow-y: auto;
+
+        #header {
+            background: #4a1a8c;
+            padding: 15px 20px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
-        #main.noConnection{
-            background-color: black;
+
+        #header-left {}
+
+        #header-title {
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
         }
-        #main.hideText{
-            color: rgba(0,0,0,0);
+
+        #header-sub {
+            color: #ccaaff;
+            font-size: 13px;
+            margin-top: 3px;
         }
-        .sentence{
-            margin-bottom: 5vh;
+
+        #muted-badge {
+            background: #cc3333;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            padding: 6px 16px;
+            border-radius: 20px;
+            letter-spacing: 1px;
+            display: none;
+        }
+
+        #muted-badge.visible {
+            display: block;
+        }
+
+        #status-area {
+            background: #2a0d4e;
+            padding: 10px 20px;
+            width: 100%;
+            text-align: right;
+        }
+
+        #status-text {
+            color: #aaaaaa;
+            font-size: 16px;
+        }
+
+        #status-text.listening {
+            color: #00cc66;
+        }
+
+        #status-text.speaking {
+            color: #cc88ff;
+        }
+
+        #status-text.muted {
+            color: #cc3333;
+        }
+
+        #main-area {
+            padding: 30px 20px;
+            width: 100%;
+            min-height: 200px;
+            text-align: center;
+        }
+
+        #subtitle-text {
+            color: white;
+            font-size: 36px;
+            line-height: 1.5;
+            text-align: center;
+        }
+
+        #listening-text {
+            color: #00cc66;
+            font-size: 28px;
+            text-align: center;
+            display: none;
+            margin-top: 20px;
+        }
+
+        #muted-text {
+            color: #cc3333;
+            font-size: 28px;
+            text-align: center;
+            display: none;
+            margin-top: 20px;
+        }
+
+        #footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: #2a0d4e;
+            padding: 10px 20px;
+            text-align: center;
+            color: #9966cc;
+            font-size: 12px;
         }
     </style>
-    <body>
-        <div id="main" onclick="location.reload()">
-            ...
+</head>
+<body>
+    <div id="header">
+        <div id="header-left">
+            <div id="header-title">PEPPER</div>
+            <div id="header-sub">Nescot Computing Department</div>
         </div>
+        <div id="muted-badge">🔇 MUTED</div>
+    </div>
 
-        <script type="text/javascript">
+    <div id="status-area">
+        <span id="status-text">Standby</span>
+    </div>
 
-            function sendData(target, data, resultCallback, errorCallback) {
-                var dataStr="";
-                keys = Object.keys(data);
-                for(var i=0;i<keys.length;i++){
-                    key = keys[i];
-                    dataStr += encodeURIComponent(key) + '=' + encodeURIComponent(data[key]) + "&";
+    <div id="main-area">
+        <div id="subtitle-text"></div>
+        <div id="listening-text">&#127908; Pepper is listening...</div>
+        <div id="muted-text">🔇 Pepper is muted</div>
+    </div>
+
+    <div id="footer">
+        Nescot College &nbsp;·&nbsp; Computing Department &nbsp;·&nbsp; AI Social Robot
+    </div>
+
+    <script>
+        var subtitleEl = document.getElementById('subtitle-text');
+        var listeningEl = document.getElementById('listening-text');
+        var mutedEl = document.getElementById('muted-text');
+        var mutedBadge = document.getElementById('muted-badge');
+        var statusEl = document.getElementById('status-text');
+        var prevText = "";
+        var prevListening = false;
+        var prevMuted = false;
+        var clearTimer = null;
+
+        function update(text, listening, muted) {
+            // Handle muted state
+            if (muted !== prevMuted) {
+                prevMuted = muted;
+                if (muted) {
+                    mutedBadge.className = 'visible';
+                    mutedEl.style.display = 'block';
+                    listeningEl.style.display = 'none';
+                    subtitleEl.innerHTML = '';
+                    statusEl.textContent = 'Muted';
+                    statusEl.className = 'muted';
+                } else {
+                    mutedBadge.className = '';
+                    mutedEl.style.display = 'none';
+                    statusEl.textContent = 'Standby';
+                    statusEl.className = '';
                 }
-                var xmlhttp = new XMLHttpRequest();
-                xmlhttp.onreadystatechange = function() {
-                    if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
-                        if (resultCallback != null) {
-                            resultCallback(xmlhttp.responseText);
-                        }
-                    }
-                };
-                xmlhttp.onerror=function(err){
-                    if(errorCallback){
-                        errorCallback(err);
-                    }
-                };
-                xmlhttp.open("POST", target, true);
-                xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-                xmlhttp.send(dataStr);
-
             }
-            var lastTextTime = 0;
-            function showSubtitles(text){
-                if (text == prevText){
-                    return;
+
+            if (muted) return;
+
+            // Handle listening state
+            if (listening !== prevListening) {
+                prevListening = listening;
+                if (listening) {
+                    listeningEl.style.display = 'block';
+                    subtitleEl.innerHTML = '';
+                    statusEl.textContent = 'Listening';
+                    statusEl.className = 'listening';
+                } else {
+                    listeningEl.style.display = 'none';
+                    statusEl.textContent = 'Speaking';
+                    statusEl.className = 'speaking';
                 }
-                lastTextTime = Date.now();
+            }
+
+            // Handle subtitle text
+            if (text !== prevText) {
                 prevText = text;
-                main.innerHTML = "";
-                function addChunk(chunk){
-                    if(chunk){
-                        chunk = chunk.replace(/\n/g, "<br/>");
-                        main.innerHTML += "<div class='sentence'>" + chunk + "</div>";
+                if (text && text !== '*') {
+                    subtitleEl.innerHTML = text;
+                    if (clearTimer) clearTimeout(clearTimer);
+                    clearTimer = setTimeout(function() {
+                        subtitleEl.innerHTML = '';
+                        statusEl.textContent = 'Standby';
+                        statusEl.className = '';
+                    }, 8000);
+                } else {
+                    subtitleEl.innerHTML = '';
+                }
+            }
+        }
+
+        function poll() {
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState == 4) {
+                    if (xhr.status == 200) {
+                        try {
+                            var data = JSON.parse(xhr.responseText);
+                            update(data.text, data.listening, data.muted);
+                        } catch(e) {
+                            update(xhr.responseText, false, false);
+                        }
+                        setTimeout(poll, 200);
+                    } else {
+                        setTimeout(poll, 1000);
                     }
                 }
-                var chunk = "";
-                for (var i = 0; i < text.length; i++){
-                    c = text.charAt(i);
-                    chunk += c;
-                    if (".?!".indexOf(c) >= 0){
-                        addChunk(chunk);
-                        chunk = "";
-                    }
-                }
-                addChunk(chunk);
-                main.scrollTop = main.scrollHeight;
-            }
-            function poll(){
-                
-                sendData("", {"get_subtitles":1},function(response) {
-                    console.log(response);
-                    showSubtitles(response);
-                    main.classList.toggle("noConnection", false);
-                    window.setTimeout(poll, 200);
-                }, function(err){
-                    main.classList.toggle("noConnection", true);
-                    window.setTimeout(poll, 1000);
-                })
-            }
-            var main;
-            var prevText = "";
-            setTimeout(function(){
-                main = document.getElementById("main");
-                main.innerHTML="Hej 6";
-                main.scrollTop = 999999;            
-                main.scrollTop = main.scrollHeight;             
-                poll();
-                setInterval(function(){
-                    if (main){
-                        main.classList.toggle("hideText", Date.now() - lastTextTime > 30000)
-                    }
-                }, 100);
+            };
+            xhr.onerror = function() {
+                setTimeout(poll, 1000);
+            };
+            xhr.open("POST", "", true);
+            xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+            xhr.send("get_subtitles=1");
+        }
 
-            },1000);
-
-
-        </script>
-    </body>
+        poll();
+    </script>
+</body>
 </html>

@@ -17,6 +17,8 @@ htmlfile = os.path.dirname(os.path.realpath(__file__)) + "/subtitles.html"
 class SubtitleServer:
     class HttpHandler(http.server.BaseHTTPRequestHandler):
         pending_text = "*"
+        listening = False
+        muted = False
         def do_GET(self):
             #print("getreq:", self.request)
             self.send_response(200)
@@ -36,14 +38,16 @@ class SubtitleServer:
             self.wfile.write(content)
         
         def do_POST(self):
-            #print("postreq:", self.request)
-            # while not self.pending_text:
-            #     time.sleep(.1)
             self.send_response(200)
-            self.send_header("Content-type", "text/html")
+            self.send_header("Content-type", "application/json")
             self.end_headers()
-            self.wfile.write(self.pending_text.encode("utf-8"))
-            #self.pending_text = ""
+            import json
+            payload = json.dumps({
+                "text": self.pending_text,
+                "listening": self.listening,
+                "muted": self.muted
+            })
+            self.wfile.write(payload.encode("utf-8"))
 
         def log_message(self, format, *args):
             return
@@ -54,10 +58,7 @@ class SubtitleServer:
         if(self._instance):
             return self._instance
         self._instance = self
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(('8.8.8.8', 80))
-        self.url = f"http://{s.getsockname()[0]}:{http_port}"
-        s.close()
+        self.url = f"http://172.22.34.17:{http_port}"
 
         def listen():
             socketserver.TCPServer.allow_reuse_address = True
@@ -72,6 +73,10 @@ class SubtitleServer:
         threading.Thread(target=listen, daemon=True).start()
     def set_text(self, text:str):
         self.HttpHandler.pending_text = text
+    def set_listening(self, listening:bool):
+        self.HttpHandler.listening = listening
+    def set_muted(self, muted:bool):
+        self.HttpHandler.muted = muted
 
 def split_into_sentences(text) -> List[str]:
     parts = re.split(r'([.?!])', text)
