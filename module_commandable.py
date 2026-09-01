@@ -25,7 +25,11 @@ import naoqi
 import time
 import sys, os
 import codecs
+import io
+import base64
 from naoqi import ALProxy
+import vision_definitions as vd
+from PIL import Image
 
 def start_thread(target):
     t = threading.Thread(target=target)
@@ -47,6 +51,7 @@ class ModuleCommandable(naoqi.ALModule):
         self.tablet = ALProxy("ALTabletService", robot_ip, robot_port)
         self.audio = ALProxy("ALAudioDevice")
         self.motion = ALProxy("ALMotion", robot_ip, robot_port)
+        self.video = ALProxy("ALVideoDevice", robot_ip, robot_port)
 
         self.state_reporter = RobotStateReporter()
         self.command_receiver = pepper_command.CommandReceiver(self.on_command)
@@ -93,6 +98,26 @@ class ModuleCommandable(naoqi.ALModule):
             if wait_for_connection(5):
                 return True
         print("Tablet wifi not connected. Check credentials.")
+
+    def capture_image(self):
+        try:
+            self.motion.setStiffnesses("Head", 1.0)
+            self.motion.setAngles(["HeadYaw", "HeadPitch"], [0.0, -0.2], 1.0)
+            time.sleep(0.5)
+            name = self.video.subscribeCamera("vision_capture", vd.kTopCamera, vd.kVGA, vd.kRGBColorSpace, 30)
+            try:
+                image = self.video.getImageRemote(name)
+                if image is None:
+                    return {"error": "no image returned"}
+                pil_img = Image.frombytes("RGB", (image[0], image[1]), bytes(bytearray(image[6])))
+                buf = io.BytesIO()
+                pil_img.save(buf, format="JPEG")
+                return {"image_b64": base64.b64encode(buf.getvalue())}
+            finally:
+                self.video.unsubscribe(name)
+        except Exception as e:
+            traceback.print_exc()
+            return {"error": str(e)}
 
     def on_command(self, command):
         try:
@@ -148,8 +173,12 @@ class ModuleCommandable(naoqi.ALModule):
                         self.tablet.showWebview()
                 start_thread(connect_and_open)
 
-        except:
+            elif isinstance(command, pepper_command.CaptureImage):
+                return self.capture_image()
+
+        except Exception as e:
             traceback.print_exc()
+            return {"error": str(e)}
 
     def on_touch_changed(self, name, touches):
         touched = any([len(touch) > 1 and touch[1] == True for touch in touches])

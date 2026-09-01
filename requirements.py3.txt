@@ -6,3 +6,4 @@ pyaudio
 scipy
 torch
 websocket-client
+Pillow

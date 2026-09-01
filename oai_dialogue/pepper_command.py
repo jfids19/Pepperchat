@@ -48,6 +48,11 @@ class ConfigAudio(Command):
         super(ConfigAudio, self).__init__()
         self.output_volume = output_volume
 
+class CaptureImage(Command):
+    def __init__(self):
+        # type: () -> CaptureImage
+        super(CaptureImage, self).__init__()
+
 import ast
 import inspect
 import zmq
@@ -88,8 +93,10 @@ class CommandReceiver:
                         parms = request.copy()
                         del parms["command"]
                         command = eval(command_name + "(**parms)")
-                        callback(command)
-            
+                        result = callback(command)
+                        if isinstance(result, dict):
+                            response.update(result)
+
                     response['time'] = datetime.now().isoformat()
                     sock.send_json(response)
                 except:

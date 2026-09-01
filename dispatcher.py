@@ -10,6 +10,7 @@ from oai_dialogue.speech_to_text import pcm_utils
 from oai_dialogue.speech_to_text import subtitles
 from oai_dialogue.speech_to_text.oaichat_integrated import OaiChatIntegrated, Query
 from oai_dialogue.lesson_engine import LessonEngine
+from oai_dialogue.vision_engine import VisionEngine
 import oai_dialogue.comm as comm
 dotenv.load_dotenv(os.getenv('DIALOGUE_ENV', 'dialogue.env'))
 
@@ -115,12 +116,28 @@ def main():
             with open(filepath, encoding='utf-8') as f:
                 base_prompt += "\n\n" + f.read()
 
+    # Vision engine setup
+    vision_busy = [False]
+
+    def speak_for_vision(text):
+        print("VISION SPEAK:", text[:80])
+        pts.worker = PepperTextSpeaker.Worker(pts)
+        pts.worker.push_text(text)
+
+    def set_vision_busy(busy):
+        vision_busy[0] = busy
+
+    vision_engine = VisionEngine(command_sender, speak_for_vision, set_vision_busy, system_prompt=base_prompt)
+
+    def combined_intercept(text):
+        return lesson_engine.check_trigger(text) or vision_engine.check_trigger(text)
+
     oai = OaiChatIntegrated(
         system_prompt=base_prompt,
         query_update_callback=on_query_update_with_mute,
         state_callback=print,
         intermediate_response_text_callback=intermediate_response_text_callback,
-        lesson_intercept_callback=lesson_engine.check_trigger
+        lesson_intercept_callback=combined_intercept
     )
     oai.silero.threshold = .99
 
@@ -135,7 +152,7 @@ def main():
                 last_response_time[0] = time.time()
 
             recent_response = (time.time() - last_response_time[0]) < 3.0
-            should_mute = talking or receiving or recent_response
+            should_mute = talking or receiving or recent_response or vision_busy[0]
 
             if not control_muted[0]:
                 oai.set_listening(not should_mute)

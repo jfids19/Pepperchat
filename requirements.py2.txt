@@ -1,3 +1,4 @@
 # PepperChat Python2 Requirements
 # naoqi must be installed separately
 zmq
+Pillow==6.2.2
