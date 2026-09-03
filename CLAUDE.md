@@ -10,10 +10,10 @@ PS5 controller movement, custom lesson engine, wttr.in/DuckDuckGo web search, Ne
    `cd /mnt/c/Users/nesco/pepperchat && python2 module_commandable.py --pip <pepper_ip>`
 2. WSL, Python 3.8:
    `cd /mnt/c/Users/nesco/pepperchat && python3 dispatcher.py --prompt oaichat/openai.prompt`
-3. Windows PowerShell, Python 3.13 (script lives in `C:\Users\nesco\`, NOT in this repo):
-   `py -3.13 $env:USERPROFILE\mic_streamer.py`
-4. Windows PowerShell, Python 3.13 (also in `C:\Users\nesco\`, not in this repo):
-   `py -3.13 $env:USERPROFILE\pepper_control.py`
+3. Windows PowerShell, Python 3.13:
+   `py -3.13 windows_scripts\mic_streamer.py`
+4. Windows PowerShell, Python 3.13:
+   `py -3.13 windows_scripts\pepper_control.py`
 
 Pepper's IP is DHCP — press its chest button to hear the current IP before starting terminal 1.
 Module_commandable (terminal 1) must be up before dispatcher (terminal 2) or ZMQ times out (there's a retry loop, so it recovers, just slower to start).
@@ -72,7 +72,7 @@ Module_commandable (terminal 1) must be up before dispatcher (terminal 2) or ZMQ
 
 - `oai_dialogue/mic_streamer.py` + `oai_dialogue/module_mic_streamer.py` — legacy Python 2 NaoQi
   on-robot mic capture (old `except BaseException, err:` syntax). Predates the current Windows-side UDP
-  mic pipeline. Not the same file as `C:\Users\nesco\mic_streamer.py`, which is the one actually used.
+  mic pipeline. Not the same file as `windows_scripts/mic_streamer.py`, which is the one actually used.
 - `oaichat/` (openaichat.py, oaiclient.py, oairesponse.py, oaiserver.py, oaitest.py) — pre-Groq scaffolding,
   effectively unused. Only `oaichat/openai.prompt` is still referenced (as the `--prompt` CLI default),
   though the real system prompt Pepper uses comes from `dialogue.env`'s `PROMPT` var.
@@ -95,8 +95,8 @@ Ports: 50005 mic audio, 50006 transcript (unused), 50007 robot state, 51001 ZMQ 
 
 Port 8088's portproxy binding goes stale on its own (survives in `netsh interface portproxy show
 v4tov4` but stops forwarding) whenever WSL's IP changes on restart — this is the recurring "tablet
-screen is white" cause. Fix lives at `C:\Users\nesco\fix_subtitle_portproxy.ps1` (not in this repo,
-same convention as `mic_streamer.py`/`pepper_control.py`), which re-binds it to WSL's current IP; it's
+screen is white" cause. Fix lives at `C:\Users\nesco\fix_subtitle_portproxy.ps1` (not in this repo —
+unlike `windows_scripts/mic_streamer.py`/`pepper_control.py`, which were moved in on 2026-09-03), which re-binds it to WSL's current IP; it's
 meant to run at Windows logon via a Task Scheduler entry named "PepperChat Subtitle Portproxy Fix"
 (2026-09-03) — check `schtasks /query /tn "PepperChat Subtitle Portproxy Fix"` on a fresh machine, since
 registering it requires an elevated PowerShell one-time setup that may not have been done everywhere.
