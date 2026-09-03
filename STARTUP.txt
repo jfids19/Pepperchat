@@ -8,7 +8,7 @@ cd /mnt/c/Users/nesco/pepperchat && python2 module_commandable.py --pip <pepper_
 cd /mnt/c/Users/nesco/pepperchat && python3 dispatcher.py --prompt oaichat/openai.prompt
 
 3) Windows PowerShell, Python 3.13:
-py -3.13 windows_scripts\mic_streamer.py
+cd C:\Users\nesco\pepperchat; py -3.13 windows_scripts\mic_streamer.py
 
 4) Windows PowerShell, Python 3.13:
-py -3.13 windows_scripts\pepper_control.py
+cd C:\Users\nesco\pepperchat; py -3.13 windows_scripts\pepper_control.py

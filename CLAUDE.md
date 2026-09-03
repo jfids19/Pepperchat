@@ -11,9 +11,9 @@ PS5 controller movement, custom lesson engine, wttr.in/DuckDuckGo web search, Ne
 2. WSL, Python 3.8:
    `cd /mnt/c/Users/nesco/pepperchat && python3 dispatcher.py --prompt oaichat/openai.prompt`
 3. Windows PowerShell, Python 3.13:
-   `py -3.13 windows_scripts\mic_streamer.py`
+   `cd C:\Users\nesco\pepperchat; py -3.13 windows_scripts\mic_streamer.py`
 4. Windows PowerShell, Python 3.13:
-   `py -3.13 windows_scripts\pepper_control.py`
+   `cd C:\Users\nesco\pepperchat; py -3.13 windows_scripts\pepper_control.py`
 
 Pepper's IP is DHCP — press its chest button to hear the current IP before starting terminal 1.
 Module_commandable (terminal 1) must be up before dispatcher (terminal 2) or ZMQ times out (there's a retry loop, so it recovers, just slower to start).
