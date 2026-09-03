@@ -93,8 +93,19 @@ Pepper 172.22.34.23 · WSL 172.31.94.202 · Windows 172.22.34.17 (as of 2026-08-
 Ports: 50005 mic audio, 50006 transcript (unused), 50007 robot state, 51001 ZMQ (dispatcher↔module),
 7356 control-panel commands, 7357 mute (dead/unused), 8088 subtitle HTTP (portproxy'd from WSL).
 
+Port 8088's portproxy binding goes stale on its own (survives in `netsh interface portproxy show
+v4tov4` but stops forwarding) whenever WSL's IP changes on restart — this is the recurring "tablet
+screen is white" cause. Fix lives at `C:\Users\nesco\fix_subtitle_portproxy.ps1` (not in this repo,
+same convention as `mic_streamer.py`/`pepper_control.py`), which re-binds it to WSL's current IP; it's
+meant to run at Windows logon via a Task Scheduler entry named "PepperChat Subtitle Portproxy Fix"
+(2026-09-03) — check `schtasks /query /tn "PepperChat Subtitle Portproxy Fix"` on a fresh machine, since
+registering it requires an elevated PowerShell one-time setup that may not have been done everywhere.
+
 ## Open work
 
 - Wire `lesson_engine.py`'s `move_callback` into `_deliver_step`/`_next_step`.
 - Single source of truth for the drifting IPs (`subtitles.py`'s hardcoded URL especially).
+- Confirm the "PepperChat Subtitle Portproxy Fix" scheduled task is actually registered (see Network
+  section above) — the fix script existing isn't enough, the elevated one-time registration step
+  still needs to be run and verified after a reboot.
 - Prune the legacy files listed above.
