@@ -14,9 +14,12 @@ from openai import OpenAI
 import io
 import wave
 import urllib.parse
+from oai_dialogue.content_filter import is_inappropriate
 
 API_KEY = os.environ.get("OPENAI_KEY", "")
 assert API_KEY, "Set OPENAI_KEY in your environment."
+
+INAPPROPRIATE_REDIRECT = "I can't help with that. Let's talk about something else!"
 
 class Query:
     def __init__(self):
@@ -146,6 +149,20 @@ class OaiChatIntegrated:
                 self._cur_query.query_text = user_text
                 if self.query_response_callback:
                     self.query_response_callback(self._cur_query)
+
+                # Safety filter - block inappropriate content before it ever reaches
+                # the lesson engine, web search, or the LLM.
+                if is_inappropriate(user_text):
+                    print("BLOCKED (inappropriate):", user_text)
+                    self._cur_query.response_text = INAPPROPRIATE_REDIRECT
+                    if self.intermediate_response_text_callback:
+                        self.intermediate_response_text_callback(INAPPROPRIATE_REDIRECT)
+                    self._cur_query.done = True
+                    self._cur_query.duration = time.time() - self._cur_query.start_time
+                    if self.query_response_callback:
+                        self.query_response_callback(self._cur_query)
+                    self._set_state(self.STATE_IDLE)
+                    return
 
                 # Check lesson intercept before sending to AI
                 if self.lesson_intercept_callback and self.lesson_intercept_callback(user_text):
