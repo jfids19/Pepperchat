@@ -104,11 +104,6 @@ def main():
 
     lesson_engine = LessonEngine(speak_for_lesson, set_normal_chat_for_lesson)
 
-    def move_for_lesson(x, y, theta):
-        command_sender.send(pepper_command.Move(x=x, y=y, theta=theta))
-
-    lesson_engine.move_callback = move_for_lesson
-
     base_prompt = os.getenv('PROMPT', '')
     for filename in ['courses.txt', 'staff.txt', 'events.txt']:
         filepath = os.path.join(os.path.dirname(__file__), filename)
