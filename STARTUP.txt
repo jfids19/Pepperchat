@@ -1,6 +1,14 @@
 PepperChat startup — 4 terminals, in this order.
 Press Pepper's chest button first to hear its current IP (DHCP).
 
+If the announced IP starts with 169.254 - STOP, don't run terminal 1 with it.
+That's a self-assigned address, meaning Pepper's wifi associated but never
+got a real DHCP lease from the school network in time. It is not a valid
+address and module_commandable.py won't be able to reach the robot with it.
+Wait about a minute and press the chest button again to get a fresh IP. If
+it keeps happening, toggle Pepper's wifi off/on (or reboot her) to force a
+new DHCP attempt.
+
 1) WSL, Python 2:
 cd /mnt/c/Users/nesco/pepperchat && python2 module_commandable.py --pip <pepper_ip>
 
