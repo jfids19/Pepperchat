@@ -152,12 +152,19 @@ class ModuleCommandable(naoqi.ALModule):
                                 self.motion.stopMove()
                                 # Release head when stopped
                                 self.motion.setAngles("HeadYaw", 0.0, 0.1)
+                                # BasicAwareness/BackgroundMovement fight the base for the
+                                # Move resource and degrade controller responsiveness - only
+                                # safe to have them back once we're done driving.
+                                self.autonomous_life.setAutonomousAbilityEnabled("BasicAwareness", True)
+                                self.autonomous_life.setAutonomousAbilityEnabled("BackgroundMovement", True)
                         else:
                             # Continuously lock head every move command to override tracking
                             self.motion.setAngles("HeadYaw", 0.0, 1.0)
                             self.motion.setAngles("HeadPitch", 0.0, 1.0)
                             if not self._moving:
                                 self._moving = True
+                                self.autonomous_life.setAutonomousAbilityEnabled("BasicAwareness", False)
+                                self.autonomous_life.setAutonomousAbilityEnabled("BackgroundMovement", False)
                             self.motion.moveToward(x, y, theta)
                     except:
                         traceback.print_exc()
