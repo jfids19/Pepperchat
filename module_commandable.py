@@ -40,6 +40,17 @@ def start_thread(target):
 def encode(s):
     return codecs.encode(s,'utf-8','ignore')
 
+# Short logical gesture names -> NaoQi ALBehaviorManager behavior IDs.
+# TODO: verify these are actually installed on this robot's content pack via
+# ALProxy("ALBehaviorManager", ROBOT_IP, ROBOT_PORT).getInstalledBehaviors()
+# before relying on them - names vary by robot/OS version, these are placeholders.
+GESTURE_BEHAVIORS = {
+    "wave":  "animations/Stand/Gestures/Hey_1",
+    "nod":   "animations/Stand/Gestures/Yes_1",
+    "point": "animations/Stand/Gestures/Explain_5",
+    "bow":   "animations/Stand/Gestures/BowShort_1",
+}
+
 class ModuleCommandable(naoqi.ALModule):
     def __init__(self, robot_ip, robot_port):
         naoqi.ALModule.__init__(self, mod_name)
@@ -52,6 +63,7 @@ class ModuleCommandable(naoqi.ALModule):
         self.audio = ALProxy("ALAudioDevice")
         self.motion = ALProxy("ALMotion", robot_ip, robot_port)
         self.video = ALProxy("ALVideoDevice", robot_ip, robot_port)
+        self.behavior_manager = ALProxy("ALBehaviorManager", robot_ip, robot_port)
 
         self.state_reporter = RobotStateReporter()
         self.command_receiver = pepper_command.CommandReceiver(self.on_command)
@@ -169,6 +181,21 @@ class ModuleCommandable(naoqi.ALModule):
                     except:
                         traceback.print_exc()
                 start_thread(do_move)
+
+            elif isinstance(command, pepper_command.PlayGesture):
+                if self._moving:
+                    print("Ignoring gesture '%s': currently driving" % command.name)
+                else:
+                    behavior_id = GESTURE_BEHAVIORS.get(command.name)
+                    if behavior_id is None:
+                        print("Unknown gesture requested: %s" % command.name)
+                    else:
+                        def do_gesture(behavior_id=behavior_id):
+                            try:
+                                self.behavior_manager.runBehavior(behavior_id)
+                            except:
+                                traceback.print_exc()
+                        start_thread(do_gesture)
 
             elif isinstance(command, pepper_command.ConfigTabletWifi):
                 self.tablet_wifi_config = command

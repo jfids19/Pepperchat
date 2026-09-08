@@ -49,6 +49,10 @@ def draw_panel(left_x, left_y, right_x):
     print("  Right Stick  : Turn left / right")
     print("  Cross  (X)   : Toggle mute / unmute")
     print("  Circle (O)   : Cancel current lesson")
+    print("  Square       : Wave")
+    print("  Triangle     : Nod")
+    print("  L1           : Point")
+    print("  R1           : Bow")
     print("  Options      : Quit")
     print("")
     fwd    = -left_y
@@ -83,9 +87,22 @@ TURN_SCALE   = 0.6
 MOVE_INTERVAL = 0.4
 DRAW_INTERVAL = 0.3  # only redraw every 300ms
 
-prev_cross   = False
-prev_circle  = False
-prev_options = False
+# Verified on this controller by pressing each button and watching
+# [joystick.get_button(i) for i in range(joystick.get_numbuttons())]:
+# Cross=0, Circle=1, Options=6, Square=2, Triangle=3, L1=9, R1=10.
+BUTTON_OPTIONS  = 6
+BUTTON_SQUARE   = 2
+BUTTON_TRIANGLE = 3
+BUTTON_L1       = 9
+BUTTON_R1       = 10
+
+prev_cross    = False
+prev_circle   = False
+prev_options  = False
+prev_square   = False
+prev_triangle = False
+prev_l1       = False
+prev_r1       = False
 last_move_time = 0
 last_draw_time = 0
 was_moving = False
@@ -114,9 +131,13 @@ while running:
         last_move_time = now
 
     # Buttons
-    cross_pressed   = joystick.get_button(0)
-    circle_pressed  = joystick.get_button(1)
-    options_pressed = joystick.get_button(9)
+    cross_pressed    = joystick.get_button(0)
+    circle_pressed   = joystick.get_button(1)
+    options_pressed  = joystick.get_button(BUTTON_OPTIONS)
+    square_pressed   = joystick.get_button(BUTTON_SQUARE)
+    triangle_pressed = joystick.get_button(BUTTON_TRIANGLE)
+    l1_pressed       = joystick.get_button(BUTTON_L1)
+    r1_pressed       = joystick.get_button(BUTTON_R1)
 
     if cross_pressed and not prev_cross:
         muted = not muted
@@ -125,13 +146,29 @@ while running:
     if circle_pressed and not prev_circle:
         send_cmd("CANCEL_LESSON")
 
+    if square_pressed and not prev_square:
+        send_cmd("GESTURE:wave")
+
+    if triangle_pressed and not prev_triangle:
+        send_cmd("GESTURE:nod")
+
+    if l1_pressed and not prev_l1:
+        send_cmd("GESTURE:point")
+
+    if r1_pressed and not prev_r1:
+        send_cmd("GESTURE:bow")
+
     if options_pressed and not prev_options:
         running = False
         break
 
-    prev_cross   = cross_pressed
-    prev_circle  = circle_pressed
-    prev_options = options_pressed
+    prev_cross    = cross_pressed
+    prev_circle   = circle_pressed
+    prev_options  = options_pressed
+    prev_square   = square_pressed
+    prev_triangle = triangle_pressed
+    prev_l1       = l1_pressed
+    prev_r1       = r1_pressed
 
     # Only redraw every 300ms to stop flashing
     if now - last_draw_time > DRAW_INTERVAL:

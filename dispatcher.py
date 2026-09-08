@@ -182,6 +182,9 @@ def main():
                     command_sender.send(pepper_command.Move(x=x, y=y, theta=theta))
                 elif cmd == "STOP":
                     command_sender.send(pepper_command.Move(x=0, y=0, theta=0))
+                elif cmd.startswith("GESTURE:"):
+                    gesture_name = cmd.replace("GESTURE:", "").strip()
+                    command_sender.send(pepper_command.PlayGesture(name=gesture_name))
                 elif cmd == "CANCEL_LESSON":
                     lesson_engine.cancel_lesson()
                 elif cmd == "STATUS":

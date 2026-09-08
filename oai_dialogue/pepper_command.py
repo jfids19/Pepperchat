@@ -42,6 +42,12 @@ class Say(Command):
         super(Say, self).__init__()
         self.text = text
 
+class PlayGesture(Command):
+    def __init__(self, name):
+        # type: (str) -> PlayGesture
+        super(PlayGesture, self).__init__()
+        self.name = name
+
 class ConfigAudio(Command):
     def __init__(self, output_volume):
         # type: (int) -> ConfigAudio
