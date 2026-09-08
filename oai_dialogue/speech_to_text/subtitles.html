@@ -168,6 +168,10 @@
                     mutedEl.style.display = 'none';
                     statusEl.textContent = 'Standby';
                     statusEl.className = '';
+                    // Muting force-hides the listening indicator without changing
+                    // `listening` itself, so force the block below to re-apply it
+                    // on unmute even if the listening state didn't change.
+                    prevListening = !listening;
                 }
             }
 
