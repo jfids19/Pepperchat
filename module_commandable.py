@@ -41,14 +41,22 @@ def encode(s):
     return codecs.encode(s,'utf-8','ignore')
 
 # Short logical gesture names -> NaoQi ALBehaviorManager behavior IDs.
-# TODO: verify these are actually installed on this robot's content pack via
-# ALProxy("ALBehaviorManager", ROBOT_IP, ROBOT_PORT).getInstalledBehaviors()
-# before relying on them - names vary by robot/OS version, these are placeholders.
+# All confirmed present via ALProxy("ALBehaviorManager", ROBOT_IP, ROBOT_PORT)
+# .getInstalledBehaviors() on this robot's content pack (2026-09-08).
+# wave/nod/point/bow are also bound to PS5 controller buttons (pepper_control.py);
+# the rest are only reachable via the LLM-chosen gesture path (oaichat_integrated.py).
 GESTURE_BEHAVIORS = {
-    "wave":  "animations/Stand/Gestures/Hey_1",
-    "nod":   "animations/Stand/Gestures/Yes_1",
-    "point": "animations/Stand/Gestures/Explain_5",
-    "bow":   "animations/Stand/Gestures/BowShort_1",
+    "wave":        "animations/Stand/Gestures/Hey_1",
+    "nod":         "animations/Stand/Gestures/Yes_1",
+    "point":       "animations/Stand/Gestures/Explain_5",
+    "bow":         "animations/Stand/Gestures/BowShort_1",
+    "no":          "animations/Stand/Gestures/No_3",
+    "think":       "animations/Stand/Gestures/Thinking_4",
+    "shrug":       "animations/Stand/Gestures/IDontKnow_1",
+    "excited":     "animations/Stand/Gestures/Excited_1",
+    "laugh":       "animations/Stand/Gestures/Laugh_1",
+    "sad":         "animations/Stand/Emotions/Negative/Sad_1",
+    "show_tablet": "animations/Stand/Gestures/ShowTablet_1",
 }
 
 class ModuleCommandable(naoqi.ALModule):

@@ -127,12 +127,16 @@ def main():
     def combined_intercept(text):
         return lesson_engine.check_trigger(text) or vision_engine.check_trigger(text)
 
+    def on_gesture_chosen(name):
+        command_sender.send(pepper_command.PlayGesture(name=name))
+
     oai = OaiChatIntegrated(
         system_prompt=base_prompt,
         query_update_callback=on_query_update_with_mute,
         state_callback=print,
         intermediate_response_text_callback=intermediate_response_text_callback,
-        lesson_intercept_callback=combined_intercept
+        lesson_intercept_callback=combined_intercept,
+        gesture_callback=on_gesture_chosen
     )
     oai.silero.threshold = .99
 

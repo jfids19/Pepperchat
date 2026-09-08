@@ -21,6 +21,21 @@ assert API_KEY, "Set OPENAI_KEY in your environment."
 
 INAPPROPRIATE_REDIRECT = "I can't help with that. Let's talk about something else!"
 
+GESTURE_NAMES = ("wave", "nod", "point", "bow", "no", "think", "shrug", "excited", "laugh", "sad", "show_tablet")
+GESTURE_CHOICE_PROMPT = (
+    "You choose a physical gesture for a robot to perform alongside a reply "
+    "it just gave, based on the reply's content and tone. Valid gestures: "
+    "wave (greeting/farewell), nod (agreement/confirmation), point "
+    "(directing attention to something), bow (thanks/apology), "
+    "no (disagreement/refusal), think (pondering/considering), "
+    "shrug (uncertainty/not sure/don't know), excited (enthusiasm/good news), "
+    "laugh (something funny/amusing), sad (bad news/sympathy), "
+    "show_tablet (directing attention to the tablet on its chest). Respond "
+    "with exactly one word: one of wave, nod, point, bow, no, think, shrug, "
+    "excited, laugh, sad, show_tablet, or none if no gesture clearly fits. "
+    "No punctuation, no explanation."
+)
+
 class Query:
     def __init__(self):
         self.start_time = time.time()
@@ -46,7 +61,8 @@ class OaiChatIntegrated:
                  state_callback: Callable[[str], None] = None,
                  response_audio_callback=None,
                  intermediate_response_text_callback: Callable[[str], None] = None,
-                 lesson_intercept_callback: Callable[[str], bool] = None
+                 lesson_intercept_callback: Callable[[str], bool] = None,
+                 gesture_callback: Callable[[str], None] = None
                 ):
 
         self.system_prompt = system_prompt
@@ -56,6 +72,7 @@ class OaiChatIntegrated:
         self.query_response_callback = query_update_callback
         self.intermediate_response_text_callback = intermediate_response_text_callback
         self.lesson_intercept_callback = lesson_intercept_callback
+        self.gesture_callback = gesture_callback
         self._listening = True
         self._state = self.STATE_IDLE
         self._cur_query = Query()
@@ -104,6 +121,31 @@ class OaiChatIntegrated:
             except Exception as e:
                 print("Search failed:", e)
             return ""
+
+        def choose_gesture(user_text, response_text):
+            if not self.gesture_callback or not response_text:
+                return
+            try:
+                result = self.chat_client.chat.completions.create(
+                    model="openai/gpt-oss-20b",
+                    messages=[
+                        {"role": "system", "content": GESTURE_CHOICE_PROMPT},
+                        {"role": "user", "content": "User said: %s\nRobot replied: %s" % (user_text, response_text)},
+                    ],
+                    max_tokens=20,
+                    temperature=0,
+                    extra_body={"reasoning_effort": "low"},
+                )
+                choice_text = (result.choices[0].message.content or "").strip().lower()
+                # Word-boundary match, not substring - "no" must not match inside "none".
+                import re
+                words = re.findall(r"[a-z_]+", choice_text)
+                choice = next((w for w in words if w in GESTURE_NAMES), None)
+                print("GESTURE CHOICE:", choice_text, "->", choice)
+                if choice:
+                    self.gesture_callback(choice)
+            except Exception:
+                traceback.print_exc()
 
         def needs_web_search(user_text):
             text_lower = user_text.lower()
@@ -223,6 +265,7 @@ class OaiChatIntegrated:
                             self.query_response_callback(self._cur_query)
 
                 self.conversation_history.append({"role": "assistant", "content": full_response})
+                threading.Thread(target=choose_gesture, args=(user_text, full_response), daemon=True).start()
                 self._cur_query.done = True
                 self._cur_query.duration = time.time() - self._cur_query.start_time
                 if self.query_response_callback:
