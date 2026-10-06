@@ -9,6 +9,10 @@ except ImportError:
     import oai_dialogue.comm as comm
 import threading
 import time
+# subtitles (imported above) already puts the repo root on sys.path as a
+# side effect, so this is importable regardless of which of the two import
+# branches above fired.
+import net_config
 
 class PepperTextSpeaker:
     class Worker:
@@ -55,9 +59,12 @@ class PepperTextSpeaker:
 
     def __init__(self, command_sender:pepper_command.CommandSender, subtitle_server:subtitles.SubtitleServer=None):
         self.command_sender = command_sender
-        if subtitle_server:
-            print("Opening subtitle URL on tablet:", subtitle_server.url)
-            command_sender.send(pepper_command.OpenUrlOnTablet(subtitle_server.url))
+        # url is None when network.env has no WINDOWS_IP yet — the server still
+        # runs, there is just no address worth pointing the tablet at.
+        if subtitle_server and subtitle_server.url:
+            url = net_config.cache_busted(subtitle_server.url)
+            print("Opening subtitle URL on tablet:", url)
+            command_sender.send(pepper_command.OpenUrlOnTablet(url))
         self.subtitle_server = subtitle_server
         self.worker = PepperTextSpeaker.Worker(self)
 

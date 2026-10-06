@@ -21,3 +21,6 @@ dialogue.log
 
 # nano crash-recovery artifacts
 *.save*
+
+# Machine-specific network config (see network.env.example)
+network.env

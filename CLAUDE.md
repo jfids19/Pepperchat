@@ -37,6 +37,22 @@ Module_commandable (terminal 1) must be up before dispatcher (terminal 2) or ZMQ
   `ConfigSpeech`, `ConfigAudio`, `Move`, `ConfigTabletWifi`, `OpenUrlOnTablet` commands. Move locks the
   head via `setAngles` at speed 1.0 on every nonzero move (overrides face tracking), releases at zero;
   `_moving` flag prevents redundant lock calls.
+- Tablet screen switching: `ShowTabletUrl(url=None)` (`pepper_command.py`) loads a URL and shows the
+  webview immediately, deliberately **skipping** `connect_tablet_wifi()` — unlike `OpenUrlOnTablet`,
+  which gates on it and is kept only for the one-time load at dispatcher startup (cold boot, tablet wifi
+  genuinely may not be up yet). **Do not route repeated/interactive tablet switches through
+  `OpenUrlOnTablet`** — that gate polls `getWifiStatus()` for up to 3s and, on failure, tries
+  `configureWifi` + another 5s wait, which is exactly what made "toggle back to subtitles" silently stall
+  for ~8s after "open wifi menu" had just run (fixed 2026-10-05). `url=None` means
+  `net_config.robot_settings_url()`. Reached by the UDP verbs `TABLET_WIFI` / `TABLET_SUBTITLES` on 7356
+  (both now send `ShowTabletUrl`, just with different urls), bound to the controller's Share button (a
+  toggle) and to buttons in `windows_scripts/event_setup.py`. Note new `Command` subclasses must be
+  declared with the bare base name `Command`: the allowlist in `pepper_command.py` is an AST scan
+  matching on `ast.Name`.
+- `windows_scripts/event_setup.py` — tkinter window for the arrival-at-an-event routine (check Pepper's
+  IP against NaoQi on 9559, write `PEPPER_IP` + tablet wifi credentials, run the portproxy script
+  elevated, test the subtitle URL, drive the tablet). See the ARRIVING AT AN EVENT section of
+  `STARTUP.txt`. Config is read at process start, so edits apply to the *next* dispatcher run.
 - `oai_dialogue/pepper_command.py` — Command classes + ZMQ `CommandSender`/`CommandReceiver` on port
   **51001** (dispatcher.py ↔ module_commandable.py). Socket resets to `None` on `zmq.error.ZMQError` so
   the next `send()` reconnects.
@@ -62,9 +78,10 @@ Module_commandable (terminal 1) must be up before dispatcher (terminal 2) or ZMQ
   sends `OpenUrlOnTablet(subtitle_server.url)` once, which is how the tablet gets pointed at the subtitle
   page (via `ALTabletService.configureWifi` using `TABLET_WIFI_SSID/PWD/SECURITY` from `.env`, then
   `loadUrl`/`showWebview`).
-- `oai_dialogue/speech_to_text/subtitles.py` — HTTP server on 8088; `SubtitleServer.url` is **hardcoded**
-  to `http://172.22.34.17:8088` (Windows IP, updated 2026-08-26) — must be hand-edited whenever that IP
-  changes, the `netsh portproxy` alone won't fix a stale constant here.
+- `oai_dialogue/speech_to_text/subtitles.py` — HTTP server on 8088; `SubtitleServer.url` now comes from
+  `net_config.subtitle_url()` (i.e. `WINDOWS_IP` + `SUBTITLE_PORT` in `network.env`), no longer hardcoded.
+  If `WINDOWS_IP` is unset it prints `SUBTITLES DISABLED` and leaves `url = None` rather than raising —
+  Pepper still talks, there are just no subtitles, and `pepper_text_speaker.py` skips `OpenUrlOnTablet`.
 - `oai_dialogue/speech_to_text/pcm_utils.py` — `listen_on_streamed_audio()` (used) vs
   `listen_on_local_mic()` (present, must not be used from WSL).
 
@@ -86,16 +103,42 @@ Module_commandable (terminal 1) must be up before dispatcher (terminal 2) or ZMQ
   `TABLET_WIFI_SSID`/`TABLET_WIFI_PWD`/`TABLET_WIFI_SECURITY` (real credentials — never print these
   into logs, commits, or chat).
 - `dialogue.env` — just `PROMPT="..."`, the actual persona text injected into the system prompt.
+- `network.env` — the drifting addresses only, no secrets (see the Network section). Gitignored;
+  `network.env.example` is the committed template.
 
 ## Network (Pepper is DHCP — these drift; re-check before trusting them)
 
-Pepper 172.22.34.23 · WSL 172.31.94.202 · Windows 172.22.34.17 (as of 2026-08-26) · WSL gateway 172.31.80.1.
+**All drifting addresses now live in `network.env` (gitignored; template in `network.env.example`),
+read via `net_config.py` at the repo root.** `net_config.py` is deliberately Python 2.7/3.8/3.13 safe
+and stdlib-only, because `module_commandable.py` (py2) imports it too. Keys: `PEPPER_IP`, `WINDOWS_IP`,
+`WSL_IP`, `SUBTITLE_PORT`, optional `ROBOT_SETTINGS_URL`. A real env var of the same name overrides the
+file. Do not reintroduce IP literals — `grep -rn "172\.2[0-9]\." --include="*.py"` should stay empty.
+
+Key asymmetry: `WSL_IP=auto` resolves from either side (socket-route trick on WSL, `wsl hostname -I` on
+Windows), but `WINDOWS_IP=auto` is resolvable **only on Windows** — from WSL the WiFi address the tablet
+needs is invisible (you only get the NAT gateway `172.31.80.1`), so `windows_ip()` raises a
+`NetConfigError` naming what to run. `fix_subtitle_portproxy.ps1` and `event_setup.py` are the writers.
+
+Pepper 172.22.34.14 · WSL 172.31.94.202 · Windows 172.22.34.18 (as of 2026-10-06) · WSL gateway 172.31.80.1.
+These are now just a record of what `network.env` happened to hold — the file is the source of truth.
 Ports: 50005 mic audio, 50006 transcript (unused), 50007 robot state, 51001 ZMQ (dispatcher↔module),
 7356 control-panel commands, 7357 mute (dead/unused), 8088 subtitle HTTP (portproxy'd from WSL).
 
+**8088 is the only port the subtitle server is ever forwarded on — do not add a port-80 forward.**
+Tried on 2026-10-06 to match the implicit `:80` of the one tablet load known to work
+(`ROBOT_SETTINGS_URL`), on the theory the tablet's webview refused non-standard ports. Wrong: Windows
+already runs IIS bound to port 80 on this machine, which intercepts port-80 traffic ahead of the
+portproxy forward — the tablet ended up rendering IIS's own default page instead of the subtitle page.
+Confirmed (not inferred) once the tablet successfully rendered *something real* on port 80, ruling out
+every webview/DNS/stale-wifi theory that had been tested up to that point. `subtitle_port()` /
+`subtitle_url()` in `net_config.py` only ever use one port now.
+
 Port 8088's portproxy binding goes stale on its own (survives in `netsh interface portproxy show
 v4tov4` but stops forwarding) whenever WSL's IP changes on restart — this is the recurring "tablet
-screen is white" cause. Fix lives at `C:\Users\nesco\fix_subtitle_portproxy.ps1` (not in this repo —
+screen is white" cause. **As of 2026-10-05 that script also writes `WINDOWS_IP`/`WSL_IP` into
+`network.env`** instead of merely logging a warning about a hardcoded constant it could not fix, so
+logon → detect → write → correct subtitle URL is now a closed loop. Fix lives at
+`C:\Users\nesco\fix_subtitle_portproxy.ps1` (not in this repo —
 unlike `windows_scripts/mic_streamer.py`/`pepper_control.py`, which were moved in on 2026-09-03), which re-binds it to WSL's current IP; it's
 meant to run at Windows logon via a Task Scheduler entry named "PepperChat Subtitle Portproxy Fix"
 (2026-09-03) — check `schtasks /query /tn "PepperChat Subtitle Portproxy Fix"` on a fresh machine, since
@@ -104,7 +147,9 @@ registering it requires an elevated PowerShell one-time setup that may not have 
 ## Open work
 
 - Wire `lesson_engine.py`'s `move_callback` into `_deliver_step`/`_next_step`.
-- Single source of truth for the drifting IPs (`subtitles.py`'s hardcoded URL especially).
+- `ROBOT_SETTINGS_URL`'s default `http://198.18.0.1/` and `BUTTON_SHARE = 4` in `pepper_control.py` were
+  both exercised successfully during the 2026-10-06 tablet-toggle debugging session — treat as confirmed
+  working rather than open, barring a different controller.
 - Confirm the "PepperChat Subtitle Portproxy Fix" scheduled task is actually registered (see Network
   section above) — the fix script existing isn't enough, the elevated one-time registration step
   still needs to be run and verified after a reboot.

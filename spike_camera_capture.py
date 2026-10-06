@@ -7,8 +7,10 @@
 #    python2 spike_camera_capture.py --pip <ip> --pport <port>
 ###########################################################
 
+import net_config
+
 ROBOT_PORT = 9559
-ROBOT_IP = "172.22.34.18"
+ROBOT_IP = net_config.pepper_ip()
 
 from optparse import OptionParser
 from naoqi import ALProxy

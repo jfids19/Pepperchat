@@ -3,10 +3,13 @@ import socket
 import struct
 import threading
 
+import __parentdir  # noqa: F401  (puts the repo root on sys.path)
+import net_config
+
 SAMPLE_RATE = 48000
 CHANNELS = 1
 CHUNK = 4096
-WSL_IP = "172.31.94.202"
+WSL_IP = net_config.wsl_ip()
 UDP_PORT = 50005
 CONTROL_PORT = 7357
 

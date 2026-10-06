@@ -13,8 +13,12 @@
 # License: MIT
 ###########################################################
 
+import net_config
+
 ROBOT_PORT = 9559
-ROBOT_IP = "pepper.local"
+# --pip still wins; this default makes it optional once network.env has
+# PEPPER_IP. Falls back to pepper.local if it does not.
+ROBOT_IP = net_config.pepper_ip()
 
 from optparse import OptionParser
 import threading
@@ -82,6 +86,7 @@ class ModuleCommandable(naoqi.ALModule):
         self.tablet_wifi_config = None
         self.speech_config = None
         self._moving = False
+        self._tablet_busy = False
 
         def speech_loop():
             while self.running:
@@ -107,6 +112,15 @@ class ModuleCommandable(naoqi.ALModule):
                 if self.tablet.getWifiStatus() == "CONNECTED":
                     return True
                 time.sleep(.1)
+        # Reverted 2026-10-06: a version of this forced configureWifi()
+        # unconditionally, on the theory that getWifiStatus()=="CONNECTED"
+        # couldn't be trusted to mean "connected to the right network". That
+        # theory was never actually confirmed, and forcing a full wifi
+        # reconfigure/rejoin on an ALREADY-good connection turned out to be
+        # the real regression: it broke a hotspot that had previously worked
+        # fine, while Nescot's more robust AP infrastructure tolerated the
+        # same disruption. Back to the original, safer order: trust an
+        # existing connection, only reconfigure when it's actually needed.
         if wait_for_connection(3):
             return True
         if self.tablet_wifi_config:
@@ -214,6 +228,104 @@ class ModuleCommandable(naoqi.ALModule):
                         self.tablet.loadUrl(command.url.encode("utf-8"))
                         self.tablet.showWebview()
                 start_thread(connect_and_open)
+
+            elif isinstance(command, pepper_command.ShowTabletUrl):
+                # Pepper has TWO separate wifi connections: the robot head's
+                # (NaoQi/--pip) and the tablet's own Android wifi, joined
+                # separately via ConfigTabletWifi/configureWifi. The internal
+                # settings page (net_config.robot_settings_url(), the
+                # command.url=None case) is reached over the tablet<->head
+                # link and needs neither to be on any wifi at all -- which is
+                # why it has worked throughout this whole investigation
+                # regardless of every other fix tried. Any OTHER url
+                # (currently just the subtitle page) genuinely needs the
+                # TABLET's own wifi to be joined to the current network, and
+                # nothing in this codebase was actually verifying or
+                # re-establishing that for a NEW network -- the original
+                # connect_tablet_wifi() gate only ever ran once, at dispatcher
+                # startup, using whatever wifi the tablet happened to have at
+                # that moment.
+                if self._tablet_busy:
+                    # The wifi-(re)join step below can take up to 6s, long
+                    # enough for an impatient second button press to fire a
+                    # whole second show_url() thread before the first one
+                    # finishes -- confirmed in testing (2026-10-06): two
+                    # overlapping threads both called hideWebview/loadUrl/
+                    # showWebview on the tablet, and whichever happened to
+                    # call showWebview() last silently won, regardless of
+                    # which command was logically the most recent. Drop the
+                    # new one rather than queue it -- a dropped repeat of the
+                    # same toggle is harmless, same spirit as _moving above.
+                    print("Tablet busy with a previous ShowTabletUrl -- "
+                          "dropping this one.")
+                    return
+                self._tablet_busy = True
+
+                def show_url():
+                    url = command.url or net_config.robot_settings_url()
+                    try:
+                        if command.url:
+                            status = self.tablet.getWifiStatus()
+                            print("Tablet wifi status:", status)
+                            # Reverted 2026-10-06: this used to force
+                            # configureWifi() unconditionally even when
+                            # already CONNECTED, on an unconfirmed theory
+                            # that status couldn't be trusted. That forced
+                            # reconfigure turned out to be the actual
+                            # regression -- it broke a hotspot connection
+                            # that had previously worked fine by repeatedly
+                            # disrupting an already-good link, something
+                            # Nescot's more robust AP infrastructure happened
+                            # to tolerate but this hotspot didn't. Back to
+                            # only reconfiguring when genuinely needed.
+                            if status != "CONNECTED" and self.tablet_wifi_config:
+                                print("Tablet wifi not connected -- "
+                                      "rejoining with the stored "
+                                      "credentials (ssid=%s)"
+                                      % self.tablet_wifi_config.ssid)
+                                self.tablet.configureWifi(
+                                    self.tablet_wifi_config.security_type.encode("utf-8"),
+                                    self.tablet_wifi_config.ssid.encode("utf-8"),
+                                    self.tablet_wifi_config.pwd.encode("utf-8")
+                                )
+                                t0 = time.time()
+                                while time.time() - t0 < 6:
+                                    status = self.tablet.getWifiStatus()
+                                    if status == "CONNECTED":
+                                        break
+                                    time.sleep(.3)
+                                print("Tablet wifi status after rejoin attempt:", status)
+                            elif status != "CONNECTED":
+                                print("Tablet wifi not connected, and no "
+                                      "ConfigTabletWifi credentials have "
+                                      "been received -- check "
+                                      "TABLET_WIFI_SSID/PWD in .env.")
+
+                        # These NAOqi calls return immediately without
+                        # waiting for the underlying Android-side work (tear
+                        # down, navigate, fetch, render) to finish, so firing
+                        # them back-to-back races the tablet's own pipeline.
+                        # Confirmed by two observed failure modes in testing:
+                        # with no hideWebview() at all, showWebview() alone
+                        # was a no-op on an already-visible webview (stuck on
+                        # the old page); with hideWebview() but no pause,
+                        # showWebview() revealed the webview before loadUrl()
+                        # had anything to paint (blank white). Hide, pause,
+                        # load, pause for the fetch/render to start, then
+                        # show — so there's always real content by the time
+                        # it's revealed.
+                        self.tablet.hideWebview()
+                        time.sleep(0.3)
+                        self.tablet.loadUrl(url.encode("utf-8"))
+                        time.sleep(1.0)
+                        self.tablet.showWebview()
+                        print("Loaded on tablet:", url)
+                    except Exception:
+                        print("FAILED to load on tablet:", url)
+                        traceback.print_exc()
+                    finally:
+                        self._tablet_busy = False
+                start_thread(show_url)
 
             elif isinstance(command, pepper_command.CaptureImage):
                 return self.capture_image()

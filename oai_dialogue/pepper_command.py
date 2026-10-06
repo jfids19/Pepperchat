@@ -29,6 +29,18 @@ class OpenUrlOnTablet(Command):
         super(OpenUrlOnTablet, self).__init__()
         self.url = url
         
+class ShowTabletUrl(Command):
+    def __init__(self, url=None):
+        # type: (str) -> ShowTabletUrl
+        # Deliberately separate from OpenUrlOnTablet, whose handler waits for
+        # the tablet wifi first. This one skips that gate and loads
+        # immediately — needed both when wifi is what's broken (the settings
+        # page) and for toggling straight back to subtitles afterwards, where
+        # waiting to re-verify wifi just stalls the switch for no reason.
+        # url=None means "whatever ROBOT_SETTINGS_URL in network.env says".
+        super(ShowTabletUrl, self).__init__()
+        self.url = url
+
 class ConfigSpeech(Command):
     def __init__(self, language, animated):
         # type: (str, bool) -> ConfigSpeech

@@ -1,16 +1,22 @@
 import socket
+import sys
+
 import pygame
 import time
 import os
 import threading
 
-WSL_IP = "172.31.94.202"
+import __parentdir  # noqa: F401  (puts the repo root on sys.path)
+import net_config
+
+WSL_IP = net_config.wsl_ip()
 CMD_PORT = 7356
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.settimeout(0.3)
 
 muted = False
+tablet_showing_wifi = False
 running = True
 last_status = "Connecting..."
 last_status_time = 0
@@ -53,6 +59,8 @@ def draw_panel(left_x, left_y, right_x):
     print("  Triangle     : Nod")
     print("  L1           : Point")
     print("  R1           : Bow")
+    tablet_label = "subtitles" if tablet_showing_wifi else "wifi menu"
+    print(f"  Share        : Tablet -> {tablet_label}")
     print("  Options      : Quit")
     print("")
     fwd    = -left_y
@@ -79,6 +87,25 @@ if pygame.joystick.get_count() == 0:
 joystick = pygame.joystick.Joystick(0)
 joystick.init()
 print(f"Controller connected: {joystick.get_name()}")
+
+# How the BUTTON_* indices below were established, kept runnable so the next
+# one does not have to be guessed: press a button, read its number.
+if "--discover-buttons" in sys.argv:
+    print(f"{joystick.get_numbuttons()} buttons. Press any; Ctrl+C to stop.")
+    seen = set()
+    try:
+        while True:
+            pygame.event.pump()
+            pressed = {i for i in range(joystick.get_numbuttons())
+                       if joystick.get_button(i)}
+            for i in sorted(pressed - seen):
+                print(f"  button {i} pressed")
+            seen = pressed
+            time.sleep(0.05)
+    except KeyboardInterrupt:
+        pygame.quit()
+        sys.exit(0)
+
 time.sleep(1)
 
 DEADZONE     = 0.2
@@ -95,6 +122,10 @@ BUTTON_SQUARE   = 2
 BUTTON_TRIANGLE = 3
 BUTTON_L1       = 9
 BUTTON_R1       = 10
+# Share is the one free button that was convenient; its index was NOT verified
+# the same way as the others. Run `pepper_control.py --discover-buttons` and
+# press Share to confirm, then correct this if it differs.
+BUTTON_SHARE    = 4
 
 prev_cross    = False
 prev_circle   = False
@@ -103,6 +134,7 @@ prev_square   = False
 prev_triangle = False
 prev_l1       = False
 prev_r1       = False
+prev_share    = False
 last_move_time = 0
 last_draw_time = 0
 was_moving = False
@@ -138,6 +170,7 @@ while running:
     triangle_pressed = joystick.get_button(BUTTON_TRIANGLE)
     l1_pressed       = joystick.get_button(BUTTON_L1)
     r1_pressed       = joystick.get_button(BUTTON_R1)
+    share_pressed    = joystick.get_button(BUTTON_SHARE)
 
     if cross_pressed and not prev_cross:
         muted = not muted
@@ -158,6 +191,10 @@ while running:
     if r1_pressed and not prev_r1:
         send_cmd("GESTURE:bow")
 
+    if share_pressed and not prev_share:
+        tablet_showing_wifi = not tablet_showing_wifi
+        send_cmd("TABLET_WIFI" if tablet_showing_wifi else "TABLET_SUBTITLES")
+
     if options_pressed and not prev_options:
         running = False
         break
@@ -169,6 +206,7 @@ while running:
     prev_triangle = triangle_pressed
     prev_l1       = l1_pressed
     prev_r1       = r1_pressed
+    prev_share    = share_pressed
 
     # Only redraw every 300ms to stop flashing
     if now - last_draw_time > DRAW_INTERVAL:

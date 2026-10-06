@@ -4,6 +4,7 @@ import os
 import platform
 import re
 import socket
+import sys
 import threading
 import time
 import traceback
@@ -13,6 +14,14 @@ import socketserver
 from typing import Callable, List, Tuple
 import numpy as np
 
+# Reach the repo root so net_config is importable however this module is
+# started (dispatcher.py from the root, or this file directly for its __main__).
+# Same shape as the sibling __parentdir.py.
+_repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if _repo_root not in sys.path:
+    sys.path.insert(0, _repo_root)
+import net_config
+
 htmlfile = os.path.dirname(os.path.realpath(__file__)) + "/subtitles.html"
 class SubtitleServer:
     class HttpHandler(http.server.BaseHTTPRequestHandler):
@@ -20,10 +29,12 @@ class SubtitleServer:
         listening = False
         muted = False
         def do_GET(self):
-            #print("getreq:", self.request)
-            self.send_response(200)
-            self.send_header("Content-type", "text/html")
-            self.end_headers()
+            # TEMPORARY diagnostic (2026-10-06): confirms whether a request
+            # from the tablet is reaching this server at all on the hotspot,
+            # where everything server-side has been verified correct and
+            # reachable from ordinary devices, yet the tablet still shows
+            # white. Remove once that's answered either way.
+            print("SUBTITLE GET from %s: %s" % (self.client_address[0], self.path))
             # Ignore favicon with an empty 200
             if "favicon" in self.path:
                 content = b""
@@ -31,9 +42,27 @@ class SubtitleServer:
                 with open(htmlfile, "rb") as f:
                     content = f.read()
 
+            # Exactly one status line + header block + body. This used to
+            # send a second, duplicate 200-with-headers right after the
+            # first (which itself had no Content-Length and no body) —
+            # two concatenated HTTP responses on one connection. Desktop
+            # browsers tolerated it; Pepper's embedded tablet WebView did
+            # not and rendered a blank white page. That was the real cause
+            # of the white-screen tablet bug, separate from the IP/portproxy
+            # one fixed earlier.
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(content)))
+            # This exact URL was genuinely broken more than once earlier
+            # (stale IP, then the malformed-double-response bug above) while
+            # Pepper's tablet kept loading it — without this, a WebView that
+            # cached any of those broken responses would keep replaying a
+            # blank cached page forever, indistinguishable from a server
+            # that's still broken. The query-string cache-bust in
+            # dispatcher.py's ShowTabletUrl calls is the other half of this.
+            self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+            self.send_header("Pragma", "no-cache")
+            self.send_header("Expires", "0")
             self.end_headers()
             self.wfile.write(content)
         
@@ -54,11 +83,20 @@ class SubtitleServer:
             return super().log_message(format, *args)
     
     _instance:"SubtitleServer" = None
-    def __init__(self, http_port = 8088):
+    def __init__(self, http_port = None):
         if(self._instance):
             return self._instance
         self._instance = self
-        self.url = f"http://172.22.34.17:{http_port}"
+        if http_port is None:
+            http_port = net_config.subtitle_port()
+        # The tablet has to reach the Windows host, not WSL, so this address
+        # comes from network.env (written by fix_subtitle_portproxy.ps1 or
+        # event_setup.py). A missing value means no subtitles, not no Pepper.
+        try:
+            self.url = net_config.subtitle_url()
+        except net_config.NetConfigError as err:
+            print("SUBTITLES DISABLED: " + str(err))
+            self.url = None
 
         def listen():
             socketserver.TCPServer.allow_reuse_address = True

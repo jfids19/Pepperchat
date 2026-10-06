@@ -5,6 +5,7 @@ dotenv.load_dotenv()
 import threading, time, json, os
 from datetime import datetime
 import oai_dialogue.pepper_command as pepper_command
+import net_config
 from oai_dialogue.speech_to_text.pepper_text_speaker import PepperTextSpeaker
 from oai_dialogue.speech_to_text import pcm_utils
 from oai_dialogue.speech_to_text import subtitles
@@ -189,6 +190,26 @@ def main():
                 elif cmd.startswith("GESTURE:"):
                     gesture_name = cmd.replace("GESTURE:", "").strip()
                     command_sender.send(pepper_command.PlayGesture(name=gesture_name))
+                elif cmd == "TABLET_WIFI":
+                    # Pepper's own network settings page, for joining a new
+                    # network on site. Replaces the subtitle webview.
+                    command_sender.send(pepper_command.ShowTabletUrl())
+                elif cmd == "TABLET_SUBTITLES":
+                    # The way back — without this the only route from the
+                    # settings page to the subtitle page is a dispatcher
+                    # restart. Uses the same ungated ShowTabletUrl as above
+                    # (not OpenUrlOnTablet) so it switches instantly rather
+                    # than stalling on a wifi re-check that's pointless here.
+                    # cache_busted() because this exact URL was genuinely
+                    # broken more than once earlier this session (stale IP,
+                    # then malformed HTTP) while the tablet kept loading it —
+                    # a cached blank response would be indistinguishable from
+                    # a server that's still broken.
+                    if subtitle_server.url:
+                        command_sender.send(pepper_command.ShowTabletUrl(
+                            url=net_config.cache_busted(subtitle_server.url)))
+                    else:
+                        print("No subtitle URL — set WINDOWS_IP in network.env")
                 elif cmd == "CANCEL_LESSON":
                     lesson_engine.cancel_lesson()
                 elif cmd == "STATUS":

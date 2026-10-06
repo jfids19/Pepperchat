@@ -1,6 +1,9 @@
 PepperChat startup — 4 terminals, in this order.
 Press Pepper's chest button first to hear its current IP (DHCP).
 
+Taking Pepper to an event on a different network? Do the ARRIVING AT AN EVENT
+section at the bottom first.
+
 If the announced IP starts with 169.254 - STOP, don't run terminal 1 with it.
 That's a self-assigned address, meaning Pepper's wifi associated but never
 got a real DHCP lease from the school network in time. It is not a valid
@@ -20,3 +23,49 @@ cd C:\Users\nesco\pepperchat; py -3.13 windows_scripts\mic_streamer.py
 
 4) Windows PowerShell, Python 3.13:
 cd C:\Users\nesco\pepperchat; py -3.13 windows_scripts\pepper_control.py
+
+
+===========================================================================
+ARRIVING AT AN EVENT (different wifi, e.g. a phone hotspot)
+===========================================================================
+
+All the addresses that drift now live in ONE file: network.env in the repo
+root. Nothing else needs hand-editing. Credentials stay in .env.
+
+BEFORE YOU LEAVE NESCOT — do this while you still have a working network:
+  Turn the phone hotspot on, run the normal 4 terminals, then press Share on
+  the controller (or "Open wifi menu on tablet" in the setup window) and join
+  Pepper to the hotspot from her own settings page. Pepper remembers the
+  network, so on the day she associates by herself.
+  This matters: the laptop can only drive the tablet once Pepper is already
+  reachable, so joining her on site is the awkward path, not the normal one.
+
+ON THE DAY:
+  1) Phone hotspot on. Connect the Windows laptop to it.
+  2) Power up Pepper, wait for her to associate, press her chest button for
+     the new IP. 169.254.x.x means no DHCP lease — see the warning above.
+  3) Windows PowerShell:
+       cd C:\Users\nesco\pepperchat
+       py -3.13 windows_scripts\event_setup.py
+     In that window:
+       - Type Pepper's IP, click Check (confirms NaoQi answers on 9559).
+       - Type the hotspot SSID and password.
+       - Click "1. Apply network config".
+       - Click "2. Rebind portproxy (admin)" and approve the UAC prompt.
+         This detects the laptop's new WiFi IP and WSL's IP and writes both
+         into network.env.
+       - Click "3. Test subtitle URL". It MUST say it is serving the page.
+         If it does not, the tablet will show a white screen — fix it here,
+         not later. Worth also loading that URL on the phone to be sure.
+  4) Now run the 4 terminals as normal. --pip is optional once PEPPER_IP is
+     set, but passing it explicitly still works and still wins.
+
+IF THE TABLET SHOWS A WHITE SCREEN:
+  That is the subtitle URL being wrong or unreachable. Run "Rebind portproxy"
+  then "Test subtitle URL" in the setup window, and restart the dispatcher
+  (network.env is read at startup, so a change needs a restart to take hold).
+
+SWITCHING THE TABLET BETWEEN SCREENS AT ANY TIME:
+  Share on the controller toggles the tablet between Pepper's wifi settings
+  page and the subtitle page. The setup window has the same two buttons.
+  Both need module_commandable.py and dispatcher.py already running.
