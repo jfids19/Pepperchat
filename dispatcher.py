@@ -112,6 +112,23 @@ def main():
             with open(filepath, encoding='utf-8') as f:
                 base_prompt += "\n\n" + f.read()
 
+    # Introduction speech (R2 on the controller) -- spoken verbatim, NOT
+    # added to base_prompt like the files above: this is content Pepper
+    # reads on demand, not background knowledge for the LLM to draw on.
+    introduction_path = os.path.join(os.path.dirname(__file__), 'introduction.txt')
+    introduction_text = ''
+    if os.path.isfile(introduction_path):
+        with open(introduction_path, encoding='utf-8') as f:
+            introduction_text = f.read().strip()
+
+    def speak_introduction():
+        if not introduction_text:
+            print("No introduction.txt found or it's empty -- nothing to say")
+            return
+        print("INTRODUCTION SPEAK:", introduction_text[:80])
+        pts.worker = PepperTextSpeaker.Worker(pts)
+        pts.worker.push_text(introduction_text)
+
     # Vision engine setup
     vision_busy = [False]
 
@@ -210,6 +227,8 @@ def main():
                             url=net_config.cache_busted(subtitle_server.url)))
                     else:
                         print("No subtitle URL — set WINDOWS_IP in network.env")
+                elif cmd == "INTRODUCTION":
+                    speak_introduction()
                 elif cmd == "CANCEL_LESSON":
                     lesson_engine.cancel_lesson()
                 elif cmd == "STATUS":

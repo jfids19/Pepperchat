@@ -1,0 +1,10 @@
+PLACEHOLDER - replace this with the actual introduction text.
+
+Spoken verbatim by Pepper when R2 is pressed on the controller (or the
+INTRODUCTION command is sent) - not fed to the LLM, so write it exactly as
+Pepper should say it out loud, plain sentences, no headers or markup.
+
+Hello! My name is Pepper, and I am a social robot here at the Nescot
+Computing Department. I can answer your questions, play games, and show
+you a little of what artificial intelligence and robotics can do. Feel
+free to come and say hello!

@@ -61,6 +61,7 @@ def draw_panel(left_x, left_y, right_x):
     print("  R1           : Bow")
     tablet_label = "subtitles" if tablet_showing_wifi else "wifi menu"
     print(f"  Share        : Tablet -> {tablet_label}")
+    print("  R2           : Speak introduction")
     print("  Options      : Quit")
     print("")
     fwd    = -left_y
@@ -89,10 +90,15 @@ joystick.init()
 print(f"Controller connected: {joystick.get_name()}")
 
 # How the BUTTON_* indices below were established, kept runnable so the next
-# one does not have to be guessed: press a button, read its number.
+# one does not have to be guessed: press a button, read its number. Also
+# prints axis values -- triggers like L2/R2 are often exposed as an analog
+# axis (0.0 at rest, moving toward 1.0 when pressed) rather than a discrete
+# button at all, which this same approach would otherwise miss entirely.
 if "--discover-buttons" in sys.argv:
-    print(f"{joystick.get_numbuttons()} buttons. Press any; Ctrl+C to stop.")
+    print(f"{joystick.get_numbuttons()} buttons, "
+          f"{joystick.get_numaxes()} axes. Press/move any; Ctrl+C to stop.")
     seen = set()
+    axis_baseline = [joystick.get_axis(i) for i in range(joystick.get_numaxes())]
     try:
         while True:
             pygame.event.pump()
@@ -101,6 +107,10 @@ if "--discover-buttons" in sys.argv:
             for i in sorted(pressed - seen):
                 print(f"  button {i} pressed")
             seen = pressed
+            for i in range(joystick.get_numaxes()):
+                value = joystick.get_axis(i)
+                if abs(value - axis_baseline[i]) > 0.3:
+                    print(f"  axis {i} moved: {value:+.2f}")
             time.sleep(0.05)
     except KeyboardInterrupt:
         pygame.quit()
@@ -126,6 +136,15 @@ BUTTON_R1       = 10
 # the same way as the others. Run `pepper_control.py --discover-buttons` and
 # press Share to confirm, then correct this if it differs.
 BUTTON_SHARE    = 4
+# R2 is a trigger, not a discrete button -- it's almost always exposed as an
+# analog AXIS (0.0 at rest, toward 1.0 fully pressed), not a get_button()
+# index, unlike everything else above. AXIS_R2=5 is an unverified guess
+# (SDL's common layout has L2/R2 as the last two axes, after the two
+# sticks' four), not confirmed on this controller the way L1/R1/Share were.
+# Run `pepper_control.py --discover-buttons` and pull R2 to confirm the
+# axis number and correct it here if it differs.
+AXIS_R2         = 5
+AXIS_R2_THRESHOLD = 0.5
 
 prev_cross    = False
 prev_circle   = False
@@ -135,6 +154,7 @@ prev_triangle = False
 prev_l1       = False
 prev_r1       = False
 prev_share    = False
+prev_r2       = False
 last_move_time = 0
 last_draw_time = 0
 was_moving = False
@@ -171,6 +191,7 @@ while running:
     l1_pressed       = joystick.get_button(BUTTON_L1)
     r1_pressed       = joystick.get_button(BUTTON_R1)
     share_pressed    = joystick.get_button(BUTTON_SHARE)
+    r2_pressed       = joystick.get_axis(AXIS_R2) > AXIS_R2_THRESHOLD
 
     if cross_pressed and not prev_cross:
         muted = not muted
@@ -195,6 +216,9 @@ while running:
         tablet_showing_wifi = not tablet_showing_wifi
         send_cmd("TABLET_WIFI" if tablet_showing_wifi else "TABLET_SUBTITLES")
 
+    if r2_pressed and not prev_r2:
+        send_cmd("INTRODUCTION")
+
     if options_pressed and not prev_options:
         running = False
         break
@@ -207,6 +231,7 @@ while running:
     prev_l1       = l1_pressed
     prev_r1       = r1_pressed
     prev_share    = share_pressed
+    prev_r2       = r2_pressed
 
     # Only redraw every 300ms to stop flashing
     if now - last_draw_time > DRAW_INTERVAL:

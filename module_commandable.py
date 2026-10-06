@@ -112,17 +112,22 @@ class ModuleCommandable(naoqi.ALModule):
                 if self.tablet.getWifiStatus() == "CONNECTED":
                     return True
                 time.sleep(.1)
-        # Reverted 2026-10-06: a version of this forced configureWifi()
-        # unconditionally, on the theory that getWifiStatus()=="CONNECTED"
-        # couldn't be trusted to mean "connected to the right network". That
-        # theory was never actually confirmed, and forcing a full wifi
-        # reconfigure/rejoin on an ALREADY-good connection turned out to be
-        # the real regression: it broke a hotspot that had previously worked
-        # fine, while Nescot's more robust AP infrastructure tolerated the
-        # same disruption. Back to the original, safer order: trust an
-        # existing connection, only reconfigure when it's actually needed.
-        if wait_for_connection(3):
-            return True
+        # This runs exactly ONCE per dispatcher startup -- unlike
+        # ShowTabletUrl's handler below, which runs on every Share press and
+        # must NOT force a reconfigure every time (that repeatedly disrupts
+        # an already-good connection on a frequently-used path -- confirmed
+        # the hard way). Here, forcing it every time is safe AND necessary:
+        # getWifiStatus()=="CONNECTED" only proves association with SOME
+        # network, and after changing network.env/.env for a new event the
+        # tablet can still be happily connected to the OLD network from
+        # before the change. Confirmed 2026-10-06: "Pepper first loads on
+        # [the default network] it works perfectly, change the wifi with
+        # event_setup.py then restart the terminals, white screen again" --
+        # trusting an existing connection first (as this used to) returns
+        # True against that stale old connection and never reaches
+        # configureWifi() at all. A full robot reboot "fixed" this in
+        # testing only because it forces the tablet to start from a
+        # disconnected state, which happens to route around this exact bug.
         if self.tablet_wifi_config:
             self.tablet.configureWifi(
                 self.tablet_wifi_config.security_type.encode("utf-8"),
@@ -131,6 +136,8 @@ class ModuleCommandable(naoqi.ALModule):
             )
             if wait_for_connection(5):
                 return True
+        elif wait_for_connection(3):
+            return True
         print("Tablet wifi not connected. Check credentials.")
 
     def capture_image(self):
