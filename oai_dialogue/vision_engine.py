@@ -20,7 +20,7 @@ VISION_TRIGGER_PHRASES = [
     "what am i holding",
 ]
 
-VISION_MODEL = "qwen/qwen3.6-27b"
+VISION_MODEL = "qwen/qwen3.8-27b"
 
 VISION_INSTRUCTIONS = (
     "You are now looking through your camera. Describe what you see or answer the "
