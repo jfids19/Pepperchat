@@ -1,10 +1,60 @@
-PLACEHOLDER - replace this with the actual introduction text.
+Hello everyone. Welcome to Brooklands Museum.
+My name is Pepper. I am a humanoid robot - which means I have been
+designed to interact with humans.
 
-Spoken verbatim by Pepper when R2 is pressed on the controller (or the
-INTRODUCTION command is sent) - not fed to the LLM, so write it exactly as
-Pepper should say it out loud, plain sentences, no headers or markup.
+And today, apparently, Jack has decided that a robot should help teach you about
+cybersecurity. No pressure, Jack.
 
-Hello! My name is Pepper, and I am a social robot here at the Nescot
-Computing Department. I can answer your questions, play games, and show
-you a little of what artificial intelligence and robotics can do. Feel
-free to come and say hello!
+You might think robots, artificial intelligence, computers and cybersecurity are all
+very modern ideas. But one of the problems computers solve today is actually
+thousands of years old.
+
+How can you send somebody a message without everybody else being able
+to understand it?
+
+Imagine you need to send an important message to another group in this room.
+You write it down and somebody intercepts it on the way. If they can simply read
+the message, your secret is gone.
+
+So what could you do?
+
+More than 2,000 years ago, Julius Caesar is associated with a simple method of
+disguising messages. Instead of writing the real letters, each letter is moved - or
+shifted - along the alphabet.
+
+If we use a shift of three, A becomes D, B becomes E, and C becomes F.
+That means the word HELLO becomes KHOOR.
+
+To somebody who does not know the rule, KHOOR might look meaningless. But if
+you know the key - shift every letter back three places - you can recover the
+original message.
+
+First, Jack is going to give you encrypted messages to crack. Then you will have
+to encrypt a message yourselves.
+
+But your final mission is more interesting.
+
+Each team will create its own secret message, choose its own Caesar shift,
+encrypt it, and pass the ciphertext to another team. That team will have to try to
+break your code.
+
+So by the end of the workshop, you will have been both the cryptographer
+protecting information and the codebreaker trying to uncover it.
+
+And while a Caesar cipher is fun, there is one important problem: there are not
+many possible keys. A computer can test every Caesar shift almost instantly.
+
+Modern encryption is enormously more sophisticated, but the basic idea you are
+exploring today still matters: take readable information, transform it using a
+method and a key, and make it difficult for an unauthorised person to
+understand.
+
+So, codebreakers: your mission is to protect your messages, intercept the other
+teams' messages, and see who can crack the codes.
+
+I'll hand you over to Jack.
+
+Jack. I would wish you good luck, but I have calculated the probability of the
+students beating you.
+
+I won't embarrass you by announcing it.
