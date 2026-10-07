@@ -63,6 +63,22 @@ GESTURE_BEHAVIORS = {
     "show_tablet": "animations/Stand/Gestures/ShowTablet_1",
 }
 
+# Rock-paper-scissors (L2 on the controller). Pepper's hand is a single
+# open/close motor (RHand: 0 closed, 1 open), so a two-finger scissors is
+# physically impossible: scissors is a half-open hand turned sideways, and
+# Pepper says each choice out loud so nobody has to guess.
+# Angles (radians) are first guesses, NOT yet tuned on the robot -- adjust
+# until each shape reads clearly from the front.
+RPS_JOINTS = ["RShoulderPitch", "RShoulderRoll", "RElbowYaw",
+              "RElbowRoll", "RWristYaw", "RHand"]
+RPS_POSES = {
+    "ready":     [0.3, -0.15, 1.2, 0.9, 0.0, 0.0],
+    "pump_down": [0.7, -0.15, 1.2, 0.9, 0.0, 0.0],
+    "rock":      [0.3, -0.15, 1.2, 0.9, 0.0, 0.0],
+    "paper":     [0.3, -0.15, 1.2, 0.9, 0.0, 1.0],
+    "scissors":  [0.3, -0.15, 1.2, 0.9, 1.5, 0.5],
+}
+
 class ModuleCommandable(naoqi.ALModule):
     def __init__(self, robot_ip, robot_port):
         naoqi.ALModule.__init__(self, mod_name)
@@ -87,6 +103,7 @@ class ModuleCommandable(naoqi.ALModule):
         self.speech_config = None
         self._moving = False
         self._tablet_busy = False
+        self._rps_busy = False
 
         def speech_loop():
             while self.running:
@@ -226,6 +243,17 @@ class ModuleCommandable(naoqi.ALModule):
                                 traceback.print_exc()
                         start_thread(do_gesture)
 
+            elif isinstance(command, pepper_command.PlayRockPaperScissors):
+                if self._moving:
+                    print("Ignoring rock-paper-scissors: currently driving")
+                elif self._rps_busy:
+                    print("Ignoring rock-paper-scissors: game already running")
+                elif command.choice not in ("rock", "paper", "scissors"):
+                    print("Unknown rock-paper-scissors choice: %s" % command.choice)
+                else:
+                    self._rps_busy = True
+                    start_thread(lambda choice=command.choice: self.play_rps(choice))
+
             elif isinstance(command, pepper_command.ConfigTabletWifi):
                 self.tablet_wifi_config = command
 
@@ -340,6 +368,33 @@ class ModuleCommandable(naoqi.ALModule):
         except Exception as e:
             traceback.print_exc()
             return {"error": str(e)}
+
+    def play_rps(self, choice):
+        # Plain ALTextToSpeech, not ALAnimatedSpeech: animated speech adds its
+        # own body language, which would fight the arm. Only BackgroundMovement
+        # is paused -- AutonomousLife itself must stay 'solitary'.
+        try:
+            rest = self.motion.getAngles(RPS_JOINTS, True)
+            self.autonomous_life.setAutonomousAbilityEnabled("BackgroundMovement", False)
+            self.motion.setStiffnesses("RArm", 1.0)
+            self.motion.angleInterpolation(RPS_JOINTS, RPS_POSES["ready"], 0.8, True)
+            for word in ["Rock", "paper", "scissors"]:
+                self.tts.post.say(word)
+                self.motion.angleInterpolation(RPS_JOINTS, RPS_POSES["pump_down"], 0.25, True)
+                self.motion.angleInterpolation(RPS_JOINTS, RPS_POSES["ready"], 0.25, True)
+            self.tts.post.say("shoot!")
+            self.motion.angleInterpolation(RPS_JOINTS, RPS_POSES[choice], 0.3, True)
+            self.tts.say(encode(choice.capitalize() + "!"))
+            time.sleep(3.0)
+            self.motion.angleInterpolation(RPS_JOINTS, rest, 1.0, True)
+        except:
+            traceback.print_exc()
+        finally:
+            try:
+                self.autonomous_life.setAutonomousAbilityEnabled("BackgroundMovement", True)
+            except:
+                traceback.print_exc()
+            self._rps_busy = False
 
     def on_touch_changed(self, name, touches):
         touched = any([len(touch) > 1 and touch[1] == True for touch in touches])

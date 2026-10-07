@@ -2,7 +2,7 @@ import traceback
 import dotenv
 import socket
 dotenv.load_dotenv()
-import threading, time, json, os
+import threading, time, json, os, random
 from datetime import datetime
 import oai_dialogue.pepper_command as pepper_command
 import net_config
@@ -131,6 +131,7 @@ def main():
 
     # Vision engine setup
     vision_busy = [False]
+    rps_busy = [False]
 
     def speak_for_vision(text):
         print("VISION SPEAK:", text[:80])
@@ -169,7 +170,7 @@ def main():
                 last_response_time[0] = time.time()
 
             recent_response = (time.time() - last_response_time[0]) < 3.0
-            should_mute = talking or receiving or recent_response or vision_busy[0]
+            should_mute = talking or receiving or recent_response or vision_busy[0] or rps_busy[0]
 
             if not control_muted[0]:
                 oai.set_listening(not should_mute)
@@ -227,6 +228,19 @@ def main():
                             url=net_config.cache_busted(subtitle_server.url)))
                     else:
                         print("No subtitle URL — set WINDOWS_IP in network.env")
+                elif cmd == "RPS":
+                    # Mic stays muted for the whole game so Pepper's own
+                    # "rock, paper..." isn't transcribed and sent to Groq --
+                    # module_commandable's speech loop keeps resetting the
+                    # talking flag, so the muter can't rely on that here.
+                    choice = random.choice(["rock", "paper", "scissors"])
+                    print("ROCK PAPER SCISSORS:", choice)
+                    rps_busy[0] = True
+                    subtitle_server.set_text("Rock, paper, scissors, shoot!")
+                    command_sender.send(pepper_command.PlayRockPaperScissors(choice=choice))
+                    threading.Timer(3.5, subtitle_server.set_text,
+                                    args=(choice.capitalize() + "!",)).start()
+                    threading.Timer(10.0, lambda: rps_busy.__setitem__(0, False)).start()
                 elif cmd == "INTRODUCTION":
                     speak_introduction()
                 elif cmd == "CANCEL_LESSON":

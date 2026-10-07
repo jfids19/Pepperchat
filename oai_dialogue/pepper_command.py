@@ -60,6 +60,12 @@ class PlayGesture(Command):
         super(PlayGesture, self).__init__()
         self.name = name
 
+class PlayRockPaperScissors(Command):
+    def __init__(self, choice):
+        # type: (str) -> PlayRockPaperScissors
+        super(PlayRockPaperScissors, self).__init__()
+        self.choice = choice  # "rock" | "paper" | "scissors"
+
 class ConfigAudio(Command):
     def __init__(self, output_volume):
         # type: (int) -> ConfigAudio

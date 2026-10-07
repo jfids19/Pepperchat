@@ -61,6 +61,7 @@ def draw_panel(left_x, left_y, right_x):
     print("  R1           : Bow")
     tablet_label = "subtitles" if tablet_showing_wifi else "wifi menu"
     print(f"  Share        : Tablet -> {tablet_label}")
+    print("  L2           : Rock paper scissors")
     print("  R2           : Speak introduction")
     print("  Options      : Quit")
     print("")
@@ -144,6 +145,10 @@ BUTTON_SHARE    = 4
 # Run `pepper_control.py --discover-buttons` and pull R2 to confirm the
 # axis number and correct it here if it differs.
 AXIS_R2         = 5
+# L2: same caveat as R2 -- axis 4 is the SDL-typical guess, unverified here.
+# Pull L2 under --discover-buttons to confirm. The > 0.5 threshold works
+# whether the trigger rests at 0.0 or -1.0.
+AXIS_L2         = 4
 AXIS_R2_THRESHOLD = 0.5
 
 prev_cross    = False
@@ -155,6 +160,7 @@ prev_l1       = False
 prev_r1       = False
 prev_share    = False
 prev_r2       = False
+prev_l2       = False
 last_move_time = 0
 last_draw_time = 0
 was_moving = False
@@ -192,6 +198,7 @@ while running:
     r1_pressed       = joystick.get_button(BUTTON_R1)
     share_pressed    = joystick.get_button(BUTTON_SHARE)
     r2_pressed       = joystick.get_axis(AXIS_R2) > AXIS_R2_THRESHOLD
+    l2_pressed       = joystick.get_axis(AXIS_L2) > AXIS_R2_THRESHOLD
 
     if cross_pressed and not prev_cross:
         muted = not muted
@@ -219,6 +226,9 @@ while running:
     if r2_pressed and not prev_r2:
         send_cmd("INTRODUCTION")
 
+    if l2_pressed and not prev_l2:
+        send_cmd("RPS")
+
     if options_pressed and not prev_options:
         running = False
         break
@@ -232,6 +242,7 @@ while running:
     prev_r1       = r1_pressed
     prev_share    = share_pressed
     prev_r2       = r2_pressed
+    prev_l2       = l2_pressed
 
     # Only redraw every 300ms to stop flashing
     if now - last_draw_time > DRAW_INTERVAL:
