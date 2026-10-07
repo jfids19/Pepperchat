@@ -132,28 +132,34 @@ class CommandSender:
     def __init__(self):
         self.ctx = zmq.Context()
         self.socket = None
+        # One REQ socket is shared by the speech worker, control-panel,
+        # gesture and vision threads. REQ is not thread-safe and must strictly
+        # alternate send/recv, so concurrent sends raised ZMQError, reset the
+        # socket to None under another thread mid-recv, and crashed it.
+        self._lock = threading.Lock()
 
     def send(self, command):
         # type: (Command) -> None
-        try:
-            if not self.socket:
-                self.socket = self.ctx.socket(zmq.REQ)
-                self.socket.connect("tcp://localhost:"+str(ZMQ_PORT))
-            self.socket.send_json(command.__dict__)
-            while True:
-                try:
-                    response = self.socket.recv_json(flags=zmq.NOBLOCK)
-                    print(response)
-                    return response
-                except zmq.Again:
-                    time.sleep(.1)
-        except zmq.error.ZMQError:
-            # Reset socket on error so next command gets a fresh connection
+        with self._lock:
             try:
-                self.socket.close()
-            except:
-                pass
-            self.socket = None
+                if not self.socket:
+                    self.socket = self.ctx.socket(zmq.REQ)
+                    self.socket.connect("tcp://localhost:"+str(ZMQ_PORT))
+                self.socket.send_json(command.__dict__)
+                while True:
+                    try:
+                        response = self.socket.recv_json(flags=zmq.NOBLOCK)
+                        print(response)
+                        return response
+                    except zmq.Again:
+                        time.sleep(.1)
+            except zmq.error.ZMQError:
+                # Reset socket on error so next command gets a fresh connection
+                try:
+                    self.socket.close()
+                except:
+                    pass
+                self.socket = None
 
 class Move(Command):
     def __init__(self, x=0.0, y=0.0, theta=0.0):
